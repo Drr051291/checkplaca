@@ -33,26 +33,15 @@ serve(async (req) => {
 
     // Consultas principais da API Infosimples
     const consultaUrls = {
-      detran: 'https://api.infosimples.com/api/v2/consultas/detran-ba/veiculo',
-      leilao: 'https://api.infosimples.com/api/v2/consultas/leilao/veiculo',
-      recall: 'https://api.infosimples.com/api/v2/consultas/recall/veiculo',
+      detran: 'https://api.infosimples.com/api/v2/consultas/detran-restricoes',
+      leilao: 'https://api.infosimples.com/api/v2/consultas/leilao-veiculo',
+      recall: 'https://api.infosimples.com/api/v2/consultas/recall-veiculo',
     };
 
     console.log('Realizando consultas na API Infosimples...');
 
     // Realizar consultas em paralelo
-    const [detranResponse, leilaoResponse, recallResponse] = await Promise.allSettled([
-      fetch(consultaUrls.detran, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: infosimplesToken,
-          placa: plate,
-          timeout: 300,
-        }),
-      }),
+    const [leilaoResponse, recallResponse] = await Promise.allSettled([
       fetch(consultaUrls.leilao, {
         method: 'POST',
         headers: {
@@ -78,21 +67,21 @@ serve(async (req) => {
     ]);
 
     // Processar respostas
-    const detranData = detranResponse.status === 'fulfilled' ? await detranResponse.value.json() : null;
     const leilaoData = leilaoResponse.status === 'fulfilled' ? await leilaoResponse.value.json() : null;
     const recallData = recallResponse.status === 'fulfilled' ? await recallResponse.value.json() : null;
 
     console.log('Consultas concluídas. Processando dados...');
+    console.log('Leilao response:', JSON.stringify(leilaoData));
+    console.log('Recall response:', JSON.stringify(recallData));
 
     // Consolidar dados do relatório
     const reportData = {
       plate,
-      vehicleInfo: detranData?.data || null,
+      vehicleInfo: null, // Will be populated from leilao or recall data
       leilao: leilaoData?.data || null,
       recall: recallData?.data || null,
       consultedAt: new Date().toISOString(),
       raw: {
-        detran: detranData,
         leilao: leilaoData,
         recall: recallData,
       },
