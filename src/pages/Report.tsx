@@ -79,6 +79,7 @@ const Report = () => {
   // Extract vehicle data from API response
   const vehicleInfo = reportData.vehicleInfo;
   const plate = reportData.plate;
+  const recalls = reportData.recalls || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,20 +135,19 @@ const Report = () => {
                 <div className="grid md:grid-cols-4 gap-6">
                   <div>
                     <div className="text-sm text-muted-foreground mb-1">Marca/Modelo</div>
-                    <div className="font-semibold">{vehicleInfo.marca || 'N/A'}</div>
-                    <div className="text-sm">{vehicleInfo.modelo || 'N/A'}</div>
+                    <div className="font-semibold">{vehicleInfo.marca_modelo || 'N/A'}</div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground mb-1">Ano</div>
                     <div className="font-semibold">{vehicleInfo.ano_fabricacao}/{vehicleInfo.ano_modelo || 'N/A'}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground mb-1">Cor</div>
-                    <div className="font-semibold">{vehicleInfo.cor || 'N/A'}</div>
+                    <div className="text-sm text-muted-foreground mb-1">Chassi</div>
+                    <div className="font-semibold">{vehicleInfo.chassi || 'N/A'}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground mb-1">RENAVAM</div>
-                    <div className="font-semibold">{vehicleInfo.renavam || 'N/A'}</div>
+                    <div className="text-sm text-muted-foreground mb-1">Placa</div>
+                    <div className="font-semibold">{vehicleInfo.placa || 'N/A'}</div>
                   </div>
                 </div>
               ) : (
@@ -241,84 +241,52 @@ const Report = () => {
           </Card>
 
           {/* Recalls Section */}
-          {reportData.recall && (
-            <Card className="shadow-soft">
-              <CardHeader className="bg-secondary/50">
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="w-6 h-6 text-orange-500" />
-                  Recalls do Fabricante
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                {reportData.recall.recalls && reportData.recall.recalls.length > 0 ? (
-                  <div className="space-y-3">
-                    {reportData.recall.recalls.map((recall: any, index: number) => (
-                      <div key={index} className="p-4 border border-orange-200 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="font-semibold mb-1">{recall.descricao || 'Recall'}</div>
-                            <div className="text-sm text-muted-foreground">
-                              Campanha: {recall.numero_campanha || 'N/A'}
-                            </div>
-                          </div>
-                          <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400">
-                            {recall.status || 'Pendente'}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="text-sm text-muted-foreground mt-4">
-                      ⚠️ Recomendamos procurar uma concessionária autorizada para realizar o recall
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="w-8 h-8 text-accent" />
-                    <div>
-                      <div className="font-semibold text-lg">Nenhum recall pendente</div>
-                      <div className="text-sm text-muted-foreground">
-                        Não há campanhas de recall ativas para este veículo
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Leilão Section */}
-          {reportData.leilao && reportData.leilao.leiloes && reportData.leilao.leiloes.length > 0 && (
-            <Card className="shadow-soft">
-              <CardHeader className="bg-secondary/50">
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="w-6 h-6 text-yellow-500" />
-                  Histórico de Leilões
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
+          <Card className="shadow-soft">
+            <CardHeader className="bg-secondary/50">
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-6 h-6 text-orange-500" />
+                Recalls do Fabricante
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {recalls && recalls.length > 0 ? (
                 <div className="space-y-3">
-                  {reportData.leilao.leiloes.map((leilao: any, index: number) => (
-                    <div key={index} className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+                  {recalls.map((recall: any, index: number) => (
+                    <div key={index} className="p-4 border border-orange-200 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                      <div className="flex items-start justify-between">
                         <div>
-                          <div className="font-semibold">{leilao.leiloeiro || 'Leilão'}</div>
+                          <div className="font-semibold mb-1">{recall.descricao || 'Recall'}</div>
                           <div className="text-sm text-muted-foreground">
-                            Data: {leilao.data || 'N/A'}
+                            Identificador: {recall.identificador || 'N/A'}
                           </div>
-                          {leilao.lote && (
-                            <div className="text-sm text-muted-foreground">
-                              Lote: {leilao.lote}
-                            </div>
-                          )}
+                          <div className="text-sm text-muted-foreground">
+                            Data: {recall.normalizado_data_registro || recall.data_registro || 'N/A'}
+                          </div>
                         </div>
+                        <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400">
+                          {recall.situacao || 'Pendente'}
+                        </Badge>
                       </div>
                     </div>
                   ))}
+                  <div className="text-sm text-muted-foreground mt-4">
+                    ⚠️ Recomendamos procurar uma concessionária autorizada para realizar o recall
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-8 h-8 text-accent" />
+                  <div>
+                    <div className="font-semibold text-lg">Nenhum recall pendente</div>
+                    <div className="text-sm text-muted-foreground">
+                      Não há campanhas de recall ativas para este veículo
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
 
           {/* Raw Data Debug (only in development) */}
           {import.meta.env.DEV && (

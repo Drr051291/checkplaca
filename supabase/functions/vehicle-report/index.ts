@@ -33,56 +33,37 @@ serve(async (req) => {
 
     // Consultas principais da API Infosimples
     const consultaUrls = {
-      detran: 'https://api.infosimples.com/api/v2/consultas/detran-restricoes',
-      leilao: 'https://api.infosimples.com/api/v2/consultas/leilao-veiculo',
-      recall: 'https://api.infosimples.com/api/v2/consultas/recall-veiculo',
+      recall: 'https://api.infosimples.com/api/v2/consultas/senatran-recall',
     };
 
     console.log('Realizando consultas na API Infosimples...');
 
-    // Realizar consultas em paralelo
-    const [leilaoResponse, recallResponse] = await Promise.allSettled([
-      fetch(consultaUrls.leilao, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: infosimplesToken,
-          placa: plate,
-          timeout: 300,
-        }),
+    // Consulta recall (que também retorna dados do veículo)
+    const recallResponse = await fetch(consultaUrls.recall, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token: infosimplesToken,
+        placa: plate,
+        timeout: 300,
       }),
-      fetch(consultaUrls.recall, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: infosimplesToken,
-          placa: plate,
-          timeout: 300,
-        }),
-      }),
-    ]);
+    });
 
-    // Processar respostas
-    const leilaoData = leilaoResponse.status === 'fulfilled' ? await leilaoResponse.value.json() : null;
-    const recallData = recallResponse.status === 'fulfilled' ? await recallResponse.value.json() : null;
+    // Processar resposta
+    const recallData = await recallResponse.json();
 
-    console.log('Consultas concluídas. Processando dados...');
-    console.log('Leilao response:', JSON.stringify(leilaoData));
+    console.log('Consulta concluída. Processando dados...');
     console.log('Recall response:', JSON.stringify(recallData));
 
     // Consolidar dados do relatório
     const reportData = {
       plate,
-      vehicleInfo: null, // Will be populated from leilao or recall data
-      leilao: leilaoData?.data || null,
-      recall: recallData?.data || null,
+      vehicleInfo: recallData?.data?.veiculo || null,
+      recalls: recallData?.data?.recalls_pendentes || [],
       consultedAt: new Date().toISOString(),
       raw: {
-        leilao: leilaoData,
         recall: recallData,
       },
     };
