@@ -1,1 +1,4 @@
 project_id = "mixfzygyqfknoqkgsmsz"
+
+[functions.vehicle-report]
+verify_jwt = false

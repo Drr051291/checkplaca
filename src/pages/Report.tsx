@@ -1,60 +1,84 @@
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Car, AlertTriangle, CheckCircle, XCircle, FileText } from "lucide-react";
+import { ArrowLeft, Download, Car, AlertTriangle, CheckCircle, XCircle, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Report = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const plate = searchParams.get('plate') || '';
+  const { toast } = useToast();
+  const reportId = searchParams.get('id');
+  
+  const [loading, setLoading] = useState(true);
+  const [reportData, setReportData] = useState<any>(null);
 
-  // Mock comprehensive report data
-  const reportData = {
-    vehicle: {
-      plate: plate,
-      brand: "VOLKSWAGEN",
-      model: "GOL 1.6 TOTAL FLEX",
-      year: "2018/2019",
-      color: "BRANCO",
-      chassis: "9BWCA05U8JP******",
-      renavam: "00123456789"
-    },
-    ipva: {
-      status: "Pago",
-      year: 2025,
-      value: "R$ 1.245,80",
-      paidDate: "15/01/2025"
-    },
-    fines: {
-      total: 2,
-      totalValue: "R$ 293,47",
-      items: [
-        { date: "12/08/2024", description: "Estacionar em local proibido", value: "R$ 130,16", status: "Pendente" },
-        { date: "05/03/2024", description: "Excesso de velocidade", value: "R$ 163,31", status: "Pendente" }
-      ]
-    },
-    restrictions: {
-      judicial: false,
-      theft: false,
-      administrative: false
-    },
-    accidents: {
-      total: 0,
-      hasRecords: false
-    },
-    recalls: {
-      total: 1,
-      items: [
-        { campaign: "2024-001", description: "Airbag do motorista", status: "Pendente de realização" }
-      ]
-    }
-  };
+  useEffect(() => {
+    const fetchReport = async () => {
+      if (!reportId) {
+        toast({
+          title: "Erro",
+          description: "ID do relatório não encontrado",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('vehicle_reports')
+          .select('*')
+          .eq('id', reportId)
+          .single();
+
+        if (error) throw error;
+
+        setReportData(data.report_data);
+      } catch (error) {
+        console.error('Erro ao carregar relatório:', error);
+        toast({
+          title: "Erro ao carregar relatório",
+          description: "Não foi possível carregar os dados do relatório",
+          variant: "destructive",
+        });
+        navigate('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReport();
+  }, [reportId, navigate, toast]);
 
   const handleDownloadPDF = () => {
-    // In a real app, this would generate and download a PDF
-    alert("Em uma aplicação real, o PDF seria gerado e baixado aqui.");
+    toast({
+      title: "Função em desenvolvimento",
+      description: "A geração de PDF estará disponível em breve",
+    });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Carregando relatório...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!reportData) {
+    return null;
+  }
+
+  // Extract vehicle data from API response
+  const vehicleInfo = reportData.vehicleInfo;
+  const plate = reportData.plate;
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,219 +120,219 @@ const Report = () => {
                   <Car className="w-8 h-8" />
                   <div>
                     <div className="text-sm opacity-90">Relatório Completo</div>
-                    <div className="text-3xl font-bold tracking-wider">{reportData.vehicle.plate}</div>
+                    <div className="text-3xl font-bold tracking-wider">{plate}</div>
                   </div>
                 </CardTitle>
                 <Badge className="bg-accent text-accent-foreground text-sm px-4 py-2">
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Relatório Pago
+                  Consulta Realizada
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid md:grid-cols-4 gap-6">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Marca/Modelo</div>
-                  <div className="font-semibold">{reportData.vehicle.brand}</div>
-                  <div className="text-sm">{reportData.vehicle.model}</div>
+              {vehicleInfo ? (
+                <div className="grid md:grid-cols-4 gap-6">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Marca/Modelo</div>
+                    <div className="font-semibold">{vehicleInfo.marca || 'N/A'}</div>
+                    <div className="text-sm">{vehicleInfo.modelo || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Ano</div>
+                    <div className="font-semibold">{vehicleInfo.ano_fabricacao}/{vehicleInfo.ano_modelo || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Cor</div>
+                    <div className="font-semibold">{vehicleInfo.cor || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">RENAVAM</div>
+                    <div className="font-semibold">{vehicleInfo.renavam || 'N/A'}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Ano</div>
-                  <div className="font-semibold">{reportData.vehicle.year}</div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-yellow-500" />
+                  <p>Dados do veículo não disponíveis no momento</p>
+                  <p className="text-sm mt-2">Algumas informações podem estar temporariamente indisponíveis</p>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Cor</div>
-                  <div className="font-semibold">{reportData.vehicle.color}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">RENAVAM</div>
-                  <div className="font-semibold">{reportData.vehicle.renavam}</div>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
           {/* IPVA Section */}
-          <Card className="shadow-soft">
-            <CardHeader className="bg-secondary/50">
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="w-6 h-6 text-accent" />
-                IPVA {reportData.ipva.year}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid md:grid-cols-3 gap-6">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Status</div>
-                  <Badge className="bg-accent text-accent-foreground">
-                    {reportData.ipva.status}
-                  </Badge>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Valor</div>
-                  <div className="font-semibold text-lg">{reportData.ipva.value}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Data de Pagamento</div>
-                  <div className="font-semibold">{reportData.ipva.paidDate}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Fines Section */}
-          <Card className="shadow-soft">
-            <CardHeader className="bg-secondary/50">
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-6 h-6 text-destructive" />
-                Multas e Infrações
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-muted-foreground">Total de multas</div>
-                  <div className="text-2xl font-bold text-destructive">{reportData.fines.total}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-muted-foreground">Valor total</div>
-                  <div className="text-2xl font-bold text-destructive">{reportData.fines.totalValue}</div>
-                </div>
-              </div>
-              <div className="space-y-3">
-                {reportData.fines.items.map((fine, index) => (
-                  <div key={index} className="p-4 border border-border rounded-lg bg-background">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <div className="font-semibold mb-1">{fine.description}</div>
-                        <div className="text-sm text-muted-foreground">Data: {fine.date}</div>
+          {vehicleInfo?.debitos_ipva && (
+            <Card className="shadow-soft">
+              <CardHeader className="bg-secondary/50">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-6 h-6 text-primary" />
+                  IPVA e Débitos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {vehicleInfo.debitos_ipva.length > 0 ? (
+                    vehicleInfo.debitos_ipva.map((debito: any, index: number) => (
+                      <div key={index} className="p-4 border border-border rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="font-semibold mb-1">Ano: {debito.ano || 'N/A'}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Valor: {debito.valor ? `R$ ${debito.valor}` : 'N/A'}
+                            </div>
+                          </div>
+                          <Badge variant={debito.situacao === 'PAGO' ? 'default' : 'destructive'}>
+                            {debito.situacao || 'Pendente'}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold text-destructive text-lg">{fine.value}</div>
-                        <Badge variant="destructive" className="mt-1">{fine.status}</Badge>
+                    ))
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-8 h-8 text-accent" />
+                      <div>
+                        <div className="font-semibold text-lg">IPVA em dia</div>
+                        <div className="text-sm text-muted-foreground">
+                          Não foram encontrados débitos de IPVA
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Restrictions Section */}
           <Card className="shadow-soft">
             <CardHeader className="bg-secondary/50">
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-6 h-6 text-primary" />
-                Restrições
+                Restrições e Gravames
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="flex items-center gap-3 p-4 border border-border rounded-lg">
-                  {reportData.restrictions.judicial ? (
-                    <XCircle className="w-6 h-6 text-destructive" />
-                  ) : (
-                    <CheckCircle className="w-6 h-6 text-accent" />
-                  )}
-                  <div>
-                    <div className="font-semibold">Judicial</div>
-                    <div className="text-sm text-muted-foreground">
-                      {reportData.restrictions.judicial ? "Possui restrição" : "Sem restrições"}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 border border-border rounded-lg">
-                  {reportData.restrictions.theft ? (
-                    <XCircle className="w-6 h-6 text-destructive" />
-                  ) : (
-                    <CheckCircle className="w-6 h-6 text-accent" />
-                  )}
-                  <div>
-                    <div className="font-semibold">Roubo/Furto</div>
-                    <div className="text-sm text-muted-foreground">
-                      {reportData.restrictions.theft ? "Possui registro" : "Sem registros"}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 border border-border rounded-lg">
-                  {reportData.restrictions.administrative ? (
-                    <XCircle className="w-6 h-6 text-destructive" />
-                  ) : (
-                    <CheckCircle className="w-6 h-6 text-accent" />
-                  )}
-                  <div>
-                    <div className="font-semibold">Administrativa</div>
-                    <div className="text-sm text-muted-foreground">
-                      {reportData.restrictions.administrative ? "Possui restrição" : "Sem restrições"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Accidents Section */}
-          <Card className="shadow-soft">
-            <CardHeader className="bg-secondary/50">
-              <CardTitle className="flex items-center gap-2">
-                <Car className="w-6 h-6 text-primary" />
-                Histórico de Sinistros
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-8 h-8 text-accent" />
-                <div>
-                  <div className="font-semibold text-lg">Nenhum sinistro registrado</div>
-                  <div className="text-sm text-muted-foreground">
-                    Não foram encontrados registros de acidentes ou perdas totais
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recalls Section */}
-          <Card className="shadow-soft">
-            <CardHeader className="bg-secondary/50">
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-6 h-6 text-orange-500" />
-                Recalls do Fabricante
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {reportData.recalls.total > 0 ? (
+              {vehicleInfo?.restricoes && vehicleInfo.restricoes.length > 0 ? (
                 <div className="space-y-3">
-                  {reportData.recalls.items.map((recall, index) => (
-                    <div key={index} className="p-4 border border-orange-200 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                      <div className="flex items-start justify-between">
+                  {vehicleInfo.restricoes.map((restricao: any, index: number) => (
+                    <div key={index} className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <XCircle className="w-6 h-6 text-destructive flex-shrink-0" />
                         <div>
-                          <div className="font-semibold mb-1">{recall.description}</div>
-                          <div className="text-sm text-muted-foreground">Campanha: {recall.campaign}</div>
+                          <div className="font-semibold">{restricao.tipo || 'Restrição'}</div>
+                          <div className="text-sm text-muted-foreground">{restricao.descricao || 'Detalhes não disponíveis'}</div>
                         </div>
-                        <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400">
-                          {recall.status}
-                        </Badge>
                       </div>
                     </div>
                   ))}
-                  <div className="text-sm text-muted-foreground mt-4">
-                    ⚠️ Recomendamos procurar uma concessionária autorizada para realizar o recall
-                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-8 h-8 text-accent" />
                   <div>
-                    <div className="font-semibold text-lg">Nenhum recall pendente</div>
+                    <div className="font-semibold text-lg">Sem restrições</div>
                     <div className="text-sm text-muted-foreground">
-                      Não há campanhas de recall ativas para este veículo
+                      Não foram encontradas restrições ou gravames para este veículo
                     </div>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Recalls Section */}
+          {reportData.recall && (
+            <Card className="shadow-soft">
+              <CardHeader className="bg-secondary/50">
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-orange-500" />
+                  Recalls do Fabricante
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {reportData.recall.recalls && reportData.recall.recalls.length > 0 ? (
+                  <div className="space-y-3">
+                    {reportData.recall.recalls.map((recall: any, index: number) => (
+                      <div key={index} className="p-4 border border-orange-200 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="font-semibold mb-1">{recall.descricao || 'Recall'}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Campanha: {recall.numero_campanha || 'N/A'}
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400">
+                            {recall.status || 'Pendente'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="text-sm text-muted-foreground mt-4">
+                      ⚠️ Recomendamos procurar uma concessionária autorizada para realizar o recall
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-8 h-8 text-accent" />
+                    <div>
+                      <div className="font-semibold text-lg">Nenhum recall pendente</div>
+                      <div className="text-sm text-muted-foreground">
+                        Não há campanhas de recall ativas para este veículo
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Leilão Section */}
+          {reportData.leilao && reportData.leilao.leiloes && reportData.leilao.leiloes.length > 0 && (
+            <Card className="shadow-soft">
+              <CardHeader className="bg-secondary/50">
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-yellow-500" />
+                  Histórico de Leilões
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-3">
+                  {reportData.leilao.leiloes.map((leilao: any, index: number) => (
+                    <div key={index} className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+                        <div>
+                          <div className="font-semibold">{leilao.leiloeiro || 'Leilão'}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Data: {leilao.data || 'N/A'}
+                          </div>
+                          {leilao.lote && (
+                            <div className="text-sm text-muted-foreground">
+                              Lote: {leilao.lote}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Raw Data Debug (only in development) */}
+          {import.meta.env.DEV && (
+            <Card className="shadow-soft">
+              <CardHeader className="bg-secondary/50">
+                <CardTitle>Dados Brutos (Debug)</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <pre className="text-xs overflow-auto max-h-96 bg-muted p-4 rounded">
+                  {JSON.stringify(reportData, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Footer Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">

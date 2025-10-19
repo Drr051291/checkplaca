@@ -5,16 +5,54 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import heroVehicle from "@/assets/hero-vehicle.png";
 
 const Index = () => {
   const [plate, setPlate] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (plate.trim()) {
-      navigate(`/search?plate=${plate.toUpperCase()}`);
+    if (plate.length !== 7) {
+      toast({
+        title: "Placa inválida",
+        description: "Por favor, insira uma placa válida com 7 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('vehicle-report', {
+        body: { plate: plate.toUpperCase() },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Consulta realizada!",
+          description: "Redirecionando para o relatório...",
+        });
+        navigate(`/report?id=${data.reportId}`);
+      } else {
+        throw new Error(data.error || 'Erro ao processar consulta');
+      }
+    } catch (error: any) {
+      console.error('Erro ao consultar veículo:', error);
+      toast({
+        title: "Erro na consulta",
+        description: error.message || "Não foi possível consultar o veículo. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -160,10 +198,10 @@ const Index = () => {
                         type="submit" 
                         size="lg"
                         className="h-14 px-8 gradient-primary hover:opacity-90 transition-smooth font-semibold"
-                        disabled={plate.length < 7}
+                        disabled={plate.length < 7 || isSearching}
                       >
                         <Search className="mr-2" />
-                        Pesquisar placa
+                        {isSearching ? "Consultando..." : "Pesquisar placa"}
                       </Button>
                     </div>
                     <p className="text-sm text-muted-foreground text-center">
