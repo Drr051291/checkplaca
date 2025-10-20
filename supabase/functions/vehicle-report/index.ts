@@ -26,6 +26,9 @@ serve(async (req) => {
       throw new Error('Chave da API Consultar Placa não configurada');
     }
 
+    console.log('API Key configurada:', apiKey ? 'Sim' : 'Não');
+    console.log('Tamanho da API Key:', apiKey?.length || 0);
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
