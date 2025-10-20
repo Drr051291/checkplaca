@@ -42,7 +42,7 @@ serve(async (req) => {
     const solicitarResponse = await fetch('https://api.consultarplaca.com.br/v2/solicitarRelatorio', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${btoa(`:${apiKey}`)}`,
+        'Authorization': `Basic ${btoa(`${apiKey}:`)}`,
       },
       body: formData,
     });
@@ -71,7 +71,7 @@ serve(async (req) => {
     const resultadoResponse = await fetch(`https://api.consultarplaca.com.br/v2/consultarProtocolo?protocolo=${protocolo}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${btoa(`:${apiKey}`)}`,
+        'Authorization': `Basic ${btoa(`${apiKey}:`)}`,
       },
     });
 
