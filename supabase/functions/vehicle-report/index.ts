@@ -22,12 +22,14 @@ serve(async (req) => {
     console.log('Consultando veículo na API Consultar Placa:', plate);
 
     const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY');
-    if (!apiKey) {
-      throw new Error('Chave da API Consultar Placa não configurada');
+    const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL');
+    if (!apiKey || !apiEmail) {
+      throw new Error('Credenciais da Consultar Placa não configuradas (email e api key)');
     }
 
-    console.log('API Key configurada:', apiKey ? 'Sim' : 'Não');
-    console.log('Tamanho da API Key:', apiKey?.length || 0);
+    console.log('API Key configurada:', 'Sim');
+    console.log('Email configurado:', 'Sim');
+    console.log('Tamanho da API Key:', apiKey.length);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -36,85 +38,57 @@ serve(async (req) => {
 
     console.log('Solicitando relatório...');
 
-    // Criar FormData para a requisição
-    const formData = new FormData();
-    formData.append('placa', plate);
-    formData.append('tipo_consulta', 'bronze');
+    // Autenticação Basic: email:apiKey (conforme documentação)
+    const basicAuth = `Basic ${btoa(`${apiEmail}:${apiKey}`)}`;
 
-    // Solicitar relatório
-    const solicitarResponse = await fetch('https://api.consultarplaca.com.br/v2/solicitarRelatorio', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(`${apiKey}:`)}`,
-      },
-      body: formData,
-    });
-
-    if (!solicitarResponse.ok) {
-      const errorText = await solicitarResponse.text();
-      console.error('Erro ao solicitar relatório:', errorText);
-      throw new Error(`Erro ao solicitar relatório: ${solicitarResponse.status}`);
-    }
-
-    const solicitarData = await solicitarResponse.json();
-    console.log('Resposta da solicitação:', JSON.stringify(solicitarData));
-
-    if (solicitarData.status !== 'ok') {
-      throw new Error(solicitarData.mensagem || 'Erro ao solicitar relatório');
-    }
-
-    const protocolo = solicitarData.protocolo;
-    console.log('Protocolo gerado:', protocolo);
-
-    // Aguardar um pouco antes de consultar o protocolo
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Consultar resultado do protocolo
-    console.log('Consultando resultado do protocolo...');
-    const resultadoResponse = await fetch(`https://api.consultarplaca.com.br/v2/consultarProtocolo?protocolo=${protocolo}`, {
+    // Consulta direta por placa
+    console.log('Chamando endpoint consultarPlaca...');
+    const consultaResponse = await fetch(`https://api.consultarplaca.com.br/v2/consultarPlaca?placa=${encodeURIComponent(plate)}` , {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${btoa(`${apiKey}:`)}`,
+        'Authorization': basicAuth,
+        'Accept': 'application/json',
       },
     });
 
-    if (!resultadoResponse.ok) {
-      const errorText = await resultadoResponse.text();
-      console.error('Erro ao consultar protocolo:', errorText);
-      throw new Error(`Erro ao consultar protocolo: ${resultadoResponse.status}`);
+    if (!consultaResponse.ok) {
+      const errorText = await consultaResponse.text();
+      console.error('Erro ao consultar placa:', errorText);
+      throw new Error(`Erro ao consultar placa: ${consultaResponse.status}`);
     }
 
-    const resultadoData = await resultadoResponse.json();
-    console.log('Resultado da consulta:', JSON.stringify(resultadoData));
+    const consultaData = await consultaResponse.json();
+    console.log('Resposta da consulta:', JSON.stringify(consultaData));
 
-    if (resultadoData.status !== 'ok') {
-      throw new Error(resultadoData.mensagem || 'Erro ao consultar dados do veículo');
+    if (consultaData.status !== 'ok') {
+      throw new Error(consultaData.mensagem || 'Erro na consulta de placa');
     }
 
-    // Extrair dados do veículo
-    const dadosVeiculo = resultadoData.dados || {};
+    // Extrair dados do veículo conforme estrutura da documentação
+    const dados = consultaData.dados || {};
+    const infoVeiculo = dados.informacoes_veiculo || {};
+    const dadosVeiculo = infoVeiculo.dados_veiculo || {};
     
     // Consolidar dados do relatório
     const reportData = {
       plate,
       vehicleInfo: {
-        marca_modelo: dadosVeiculo.MARCA_MODELO || dadosVeiculo.marca_modelo,
-        ano_fabricacao: dadosVeiculo.ANO_FABRICACAO || dadosVeiculo.ano_fabricacao,
-        ano_modelo: dadosVeiculo.ANO_MODELO || dadosVeiculo.ano_modelo,
-        chassi: dadosVeiculo.CHASSI || dadosVeiculo.chassi,
-        placa: dadosVeiculo.PLACA || dadosVeiculo.placa || plate,
-        renavam: dadosVeiculo.RENAVAM || dadosVeiculo.renavam,
-        cor: dadosVeiculo.COR || dadosVeiculo.cor,
-        combustivel: dadosVeiculo.COMBUSTIVEL || dadosVeiculo.combustivel,
-        categoria: dadosVeiculo.CATEGORIA || dadosVeiculo.categoria,
-        municipio: dadosVeiculo.MUNICIPIO || dadosVeiculo.municipio,
-        uf: dadosVeiculo.UF || dadosVeiculo.uf,
+        marca_modelo: dadosVeiculo.marca || dadosVeiculo.marca_modelo || dadosVeiculo.modelo,
+        ano_fabricacao: dadosVeiculo.ano_fabricacao,
+        ano_modelo: dadosVeiculo.ano_modelo,
+        chassi: dadosVeiculo.chassi,
+        placa: dadosVeiculo.placa || plate,
+        renavam: dadosVeiculo.renavam,
+        cor: dadosVeiculo.cor,
+        combustivel: dadosVeiculo.combustivel,
+        categoria: dadosVeiculo.tipo_veiculo || dadosVeiculo.categoria,
+        municipio: dadosVeiculo.municipio,
+        uf: dadosVeiculo.uf_municipio || dadosVeiculo.uf,
       },
-      restricoes: dadosVeiculo.restricoes || [],
-      recalls: dadosVeiculo.recalls || [],
+      restricoes: [],
+      recalls: [],
       consultedAt: new Date().toISOString(),
-      protocolo: protocolo,
-      raw: resultadoData,
+      raw: consultaData,
     };
 
     console.log('Dados consolidados:', JSON.stringify(reportData));
