@@ -108,7 +108,7 @@ const AdminDashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              AutoCheck Express - Admin
+              Consulta Placa - Admin
             </h1>
             <div className="flex items-center gap-4">
               <p className="text-sm text-muted-foreground">

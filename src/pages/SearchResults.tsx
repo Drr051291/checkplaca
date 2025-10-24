@@ -37,7 +37,7 @@ const SearchResults = () => {
             Voltar
           </Button>
           <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-            AutoCheck Express
+            Consulta Placa
           </h1>
         </div>
       </header>

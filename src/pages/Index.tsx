@@ -15,7 +15,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-              AutoCheck Express
+              Consulta Placa
             </h1>
             <nav className="hidden md:flex items-center gap-6">
               <a 
@@ -103,7 +103,7 @@ const Index = () => {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <h4 className="font-bold mb-4 bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-                AutoCheck Express
+                Consulta Placa
               </h4>
               <p className="text-sm text-muted-foreground">
                 Consulta veicular profissional com dados oficiais do DETRAN. Relatórios completos para compra segura de veículos usados.
@@ -135,9 +135,9 @@ const Index = () => {
             </div>
           </div>
           <div className="border-t border-border pt-8 mt-8 text-center text-sm text-muted-foreground">
-            <p className="mb-2">© 2024 AutoCheck Express. Todos os direitos reservados.</p>
+            <p className="mb-2">© 2024 Consulta Placa. Todos os direitos reservados.</p>
             <p className="text-xs">
-              Os dados fornecidos são obtidos de fontes oficiais e públicas. A AutoCheck Express não se responsabiliza por eventuais inconsistências nas bases de dados consultadas.
+              Os dados fornecidos são obtidos de fontes oficiais e públicas. A Consulta Placa não se responsabiliza por eventuais inconsistências nas bases de dados consultadas.
             </p>
           </div>
         </div>
