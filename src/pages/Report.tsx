@@ -80,6 +80,9 @@ const Report = () => {
   const vehicleInfo = reportData.vehicleInfo;
   const plate = reportData.plate;
   const recalls = reportData.recalls || [];
+  const rawData = reportData.raw?.dados?.informacoes_veiculo || {};
+  const dadosTecnicos = rawData.dados_tecnicos || {};
+  const dadosCarga = rawData.dados_carga || {};
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,22 +135,64 @@ const Report = () => {
             </CardHeader>
             <CardContent className="p-6">
               {vehicleInfo ? (
-                <div className="grid md:grid-cols-4 gap-6">
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Marca/Modelo</div>
-                    <div className="font-semibold">{vehicleInfo.marca_modelo || 'N/A'}</div>
+                <div className="space-y-6">
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Marca/Modelo</div>
+                      <div className="font-semibold text-lg">{vehicleInfo.marca_modelo || rawData.dados_veiculo?.modelo || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Ano Fabricação/Modelo</div>
+                      <div className="font-semibold text-lg">{vehicleInfo.ano_fabricacao || 'N/A'} / {vehicleInfo.ano_modelo || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Placa</div>
+                      <div className="font-semibold text-lg tracking-wider">{vehicleInfo.placa || plate || 'N/A'}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Ano</div>
-                    <div className="font-semibold">{vehicleInfo.ano_fabricacao}/{vehicleInfo.ano_modelo || 'N/A'}</div>
+
+                  <div className="border-t pt-6">
+                    <h3 className="font-semibold text-lg mb-4">Identificação do Veículo</h3>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="p-3 bg-secondary/30 rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-1">Chassi</div>
+                        <div className="font-mono text-sm font-semibold">{vehicleInfo.chassi || 'N/A'}</div>
+                      </div>
+                      <div className="p-3 bg-secondary/30 rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-1">Renavam</div>
+                        <div className="font-mono text-sm font-semibold">{vehicleInfo.renavam || rawData.dados_veiculo?.renavam || 'N/A'}</div>
+                      </div>
+                      <div className="p-3 bg-secondary/30 rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-1">Cor</div>
+                        <div className="font-semibold text-sm">{vehicleInfo.cor || rawData.dados_veiculo?.cor || 'N/A'}</div>
+                      </div>
+                      <div className="p-3 bg-secondary/30 rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-1">Combustível</div>
+                        <div className="font-semibold text-sm">{vehicleInfo.combustivel || rawData.dados_veiculo?.combustivel || 'N/A'}</div>
+                      </div>
+                      <div className="p-3 bg-secondary/30 rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-1">Categoria</div>
+                        <div className="font-semibold text-sm">{vehicleInfo.categoria || rawData.dados_veiculo?.segmento || 'N/A'}</div>
+                      </div>
+                      <div className="p-3 bg-secondary/30 rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-1">Procedência</div>
+                        <div className="font-semibold text-sm">{rawData.dados_veiculo?.procedencia || 'N/A'}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Chassi</div>
-                    <div className="font-semibold">{vehicleInfo.chassi || 'N/A'}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Placa</div>
-                    <div className="font-semibold">{vehicleInfo.placa || 'N/A'}</div>
+
+                  <div className="border-t pt-6">
+                    <h3 className="font-semibold text-lg mb-4">Localização</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="p-3 bg-secondary/30 rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-1">Município</div>
+                        <div className="font-semibold text-sm">{vehicleInfo.municipio || rawData.dados_veiculo?.municipio || 'N/A'}</div>
+                      </div>
+                      <div className="p-3 bg-secondary/30 rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-1">UF</div>
+                        <div className="font-semibold text-sm">{vehicleInfo.uf || rawData.dados_veiculo?.uf_municipio || 'N/A'}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -160,42 +205,91 @@ const Report = () => {
             </CardContent>
           </Card>
 
-          {/* IPVA Section */}
-          {vehicleInfo?.debitos_ipva && (
+          {/* Technical Data Section */}
+          {(dadosTecnicos && Object.keys(dadosTecnicos).length > 0) && (
+            <Card className="shadow-soft">
+              <CardHeader className="bg-secondary/50">
+                <CardTitle className="flex items-center gap-2">
+                  <Car className="w-6 h-6 text-primary" />
+                  Dados Técnicos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {dadosTecnicos.tipo_veiculo && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Tipo de Veículo</div>
+                      <div className="font-semibold text-sm">{dadosTecnicos.tipo_veiculo}</div>
+                    </div>
+                  )}
+                  {dadosTecnicos.sub_segmento && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Sub-segmento</div>
+                      <div className="font-semibold text-sm">{dadosTecnicos.sub_segmento}</div>
+                    </div>
+                  )}
+                  {dadosTecnicos.numero_motor && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Número do Motor</div>
+                      <div className="font-mono text-sm font-semibold">{dadosTecnicos.numero_motor}</div>
+                    </div>
+                  )}
+                  {dadosTecnicos.numero_caixa_cambio && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Número Caixa de Câmbio</div>
+                      <div className="font-mono text-sm font-semibold">{dadosTecnicos.numero_caixa_cambio}</div>
+                    </div>
+                  )}
+                  {dadosTecnicos.potencia && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Potência</div>
+                      <div className="font-semibold text-sm">{dadosTecnicos.potencia} CV</div>
+                    </div>
+                  )}
+                  {dadosTecnicos.cilindradas && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Cilindradas</div>
+                      <div className="font-semibold text-sm">{dadosTecnicos.cilindradas} cc</div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Cargo Data Section */}
+          {(dadosCarga && Object.keys(dadosCarga).length > 0) && (
             <Card className="shadow-soft">
               <CardHeader className="bg-secondary/50">
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="w-6 h-6 text-primary" />
-                  IPVA e Débitos
+                  Capacidades e Carga
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-4">
-                  {vehicleInfo.debitos_ipva.length > 0 ? (
-                    vehicleInfo.debitos_ipva.map((debito: any, index: number) => (
-                      <div key={index} className="p-4 border border-border rounded-lg">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="font-semibold mb-1">Ano: {debito.ano || 'N/A'}</div>
-                            <div className="text-sm text-muted-foreground">
-                              Valor: {debito.valor ? `R$ ${debito.valor}` : 'N/A'}
-                            </div>
-                          </div>
-                          <Badge variant={debito.situacao === 'PAGO' ? 'default' : 'destructive'}>
-                            {debito.situacao || 'Pendente'}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-8 h-8 text-accent" />
-                      <div>
-                        <div className="font-semibold text-lg">IPVA em dia</div>
-                        <div className="text-sm text-muted-foreground">
-                          Não foram encontrados débitos de IPVA
-                        </div>
-                      </div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {dadosCarga.numero_eixos && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Número de Eixos</div>
+                      <div className="font-semibold text-sm">{dadosCarga.numero_eixos}</div>
+                    </div>
+                  )}
+                  {dadosCarga.capacidade_passageiro && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Capacidade Passageiros</div>
+                      <div className="font-semibold text-sm">{dadosCarga.capacidade_passageiro}</div>
+                    </div>
+                  )}
+                  {dadosCarga.capacidade_maxima_tracao && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Capacidade Máx. Tração</div>
+                      <div className="font-semibold text-sm">{dadosCarga.capacidade_maxima_tracao} kg</div>
+                    </div>
+                  )}
+                  {dadosCarga.peso_bruto_total && (
+                    <div className="p-3 bg-secondary/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Peso Bruto Total</div>
+                      <div className="font-semibold text-sm">{dadosCarga.peso_bruto_total} kg</div>
                     </div>
                   )}
                 </div>
@@ -288,19 +382,6 @@ const Report = () => {
           </Card>
 
 
-          {/* Raw Data Debug (only in development) */}
-          {import.meta.env.DEV && (
-            <Card className="shadow-soft">
-              <CardHeader className="bg-secondary/50">
-                <CardTitle>Dados Brutos (Debug)</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <pre className="text-xs overflow-auto max-h-96 bg-muted p-4 rounded">
-                  {JSON.stringify(reportData, null, 2)}
-                </pre>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Footer Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
