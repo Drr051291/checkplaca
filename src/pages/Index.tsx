@@ -78,10 +78,10 @@ const Index = () => {
       <section className="py-20 bg-gradient-hero text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
           <h3 className="text-3xl md:text-4xl font-bold mb-6">
-            Pronto para consultar seu veículo?
+            Faça sua consulta agora mesmo
           </h3>
-          <p className="text-xl mb-8 opacity-90">
-            Comece com uma consulta básica gratuita agora mesmo
+          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+            Descubra o histórico completo do veículo em segundos. Comece com uma consulta básica gratuita.
           </p>
           <Button 
             size="lg"
@@ -89,8 +89,11 @@ const Index = () => {
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="h-14 px-10 text-lg font-semibold shadow-strong hover:scale-105 transition-smooth"
           >
-            Fazer Consulta Gratuita
+            Consultar placa gratuitamente
           </Button>
+          <p className="text-sm mt-4 opacity-75">
+            ✓ Sem cadastro ✓ Resultado imediato ✓ Dados oficiais do DETRAN
+          </p>
         </div>
       </section>
 
@@ -103,14 +106,15 @@ const Index = () => {
                 AutoCheck Express
               </h4>
               <p className="text-sm text-muted-foreground">
-                A plataforma mais completa de consulta veicular do Brasil.
+                Consulta veicular profissional com dados oficiais do DETRAN. Relatórios completos para compra segura de veículos usados.
               </p>
             </div>
             <div>
-              <h5 className="font-semibold mb-4">Empresa</h5>
+              <h5 className="font-semibold mb-4">Institucional</h5>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-smooth">Quem somos</a></li>
+                <li><a href="#" className="hover:text-primary transition-smooth">Sobre nós</a></li>
                 <li><a href="#" className="hover:text-primary transition-smooth">Como funciona</a></li>
+                <li><a href="#" className="hover:text-primary transition-smooth">Dúvidas frequentes</a></li>
                 <li><a href="#" className="hover:text-primary transition-smooth">Blog</a></li>
               </ul>
             </div>
@@ -130,9 +134,11 @@ const Index = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-            <p>© 2025 AutoCheck Express. Todos os direitos reservados.</p>
-            <p className="mt-2">Dados verificados junto às fontes oficiais</p>
+          <div className="border-t border-border pt-8 mt-8 text-center text-sm text-muted-foreground">
+            <p className="mb-2">© 2024 AutoCheck Express. Todos os direitos reservados.</p>
+            <p className="text-xs">
+              Os dados fornecidos são obtidos de fontes oficiais e públicas. A AutoCheck Express não se responsabiliza por eventuais inconsistências nas bases de dados consultadas.
+            </p>
           </div>
         </div>
       </footer>

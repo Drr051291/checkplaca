@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 
 export const IncludedSection = () => {
   const benefits = [
-    { text: "Histórico completo de débitos", highlight: false },
-    { text: "Verificação de sinistros e recalls", highlight: true },
-    { text: "Consulta de restrições judiciais", highlight: false },
-    { text: "Multas e pendências", highlight: false },
-    { text: "IPVA e licenciamento", highlight: true },
-    { text: "Download em PDF", highlight: false },
-    { text: "Dados técnicos completos", highlight: false },
-    { text: "Histórico de proprietários", highlight: true }
+    { text: "Histórico completo de débitos e multas", highlight: false },
+    { text: "Verificação de sinistros e colisões", highlight: true },
+    { text: "Consulta de restrições e alienações", highlight: false },
+    { text: "Situação de IPVA e licenciamento", highlight: false },
+    { text: "Histórico de recalls do fabricante", highlight: true },
+    { text: "Relatório profissional em PDF", highlight: false },
+    { text: "Especificações técnicas completas", highlight: false },
+    { text: "Verificação de leilão e salvados", highlight: true }
   ];
 
   return (
@@ -19,12 +19,12 @@ export const IncludedSection = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              O que está incluído no relatório
+              Tudo que você precisa saber antes de comprar
             </h2>
             <p className="text-muted-foreground text-lg mb-2">
-              Veja tudo o que você recebe por apenas
+              Relatório completo por apenas
             </p>
-            <p className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+            <p className="text-5xl font-bold bg-gradient-hero bg-clip-text text-transparent">
               R$ 19,90
             </p>
           </div>
@@ -47,7 +47,7 @@ export const IncludedSection = () => {
           <div className="text-center">
             <Button 
               size="lg"
-              className="h-14 px-10 gradient-primary hover:opacity-90 transition-smooth font-semibold"
+              className="h-14 px-10 gradient-primary hover:opacity-90 transition-smooth font-semibold shadow-strong"
               onClick={() => {
                 const exampleSection = document.getElementById('exemplo-relatorio');
                 if (exampleSection) {
@@ -55,8 +55,11 @@ export const IncludedSection = () => {
                 }
               }}
             >
-              Ver relatório de exemplo
+              Ver exemplo completo do relatório
             </Button>
+            <p className="text-sm text-muted-foreground mt-4">
+              Sem compromisso • Teste grátis disponível
+            </p>
           </div>
         </div>
       </div>

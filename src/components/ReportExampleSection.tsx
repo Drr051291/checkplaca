@@ -39,13 +39,13 @@ export const ReportExampleSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <Badge className="bg-accent/10 text-accent border-accent/20 px-4 py-1.5 mb-4">
-            Exemplo de Relatório
+            Demonstração de Relatório
           </Badge>
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Veja como funciona o relatório completo
+            Veja o que você recebe em cada consulta
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Exemplo real de consulta (dados anonimizados para demonstração)
+            Exemplo real de relatório completo (dados anonimizados para demonstração)
           </p>
         </div>
 
@@ -135,8 +135,8 @@ export const ReportExampleSection = () => {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
                       <Car className="w-8 h-8 text-accent" />
                     </div>
-                    <p className="font-semibold text-lg mb-2">Nenhum sinistro registrado</p>
-                    <p className="text-sm text-muted-foreground">{exampleData.sinistros.descricao}</p>
+                    <p className="font-semibold text-lg mb-2">✓ Veículo sem sinistros</p>
+                    <p className="text-sm text-muted-foreground">Nenhum registro de colisão, roubo ou sinistro encontrado nas bases oficiais</p>
                   </div>
                 </CardContent>
               </Card>

@@ -9,52 +9,54 @@ export const PlansSection = () => {
 
   const plans = [
     {
-      name: "Rápida",
-      price: "R$ 0,00",
+      name: "Consulta Básica",
+      price: "Grátis",
       headline: "Teste Grátis",
-      description: "Descubra dados básicos",
+      description: "Ideal para uma verificação rápida",
       features: [
-        "Dados básicos do veículo",
-        "Marca, modelo e ano",
-        "Cor e tipo",
-        "Consulta instantânea"
+        "Dados cadastrais do veículo",
+        "Marca, modelo e ano de fabricação",
+        "Cor e tipo de combustível",
+        "Resultado instantâneo"
       ],
-      cta: "Começar grátis",
+      cta: "Começar consulta grátis",
       popular: false,
       onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     {
-      name: "Completa",
+      name: "Relatório Completo",
       price: "R$ 19,90",
       headline: "Mais Popular",
-      description: "Ideal para quem vai comprar carro usado",
+      description: "Perfeito para compra de veículo usado",
       features: [
-        "Tudo do plano Rápida",
-        "Histórico de débitos",
-        "IPVA e licenciamento",
-        "Multas e pendências",
-        "Restrições judiciais",
-        "Download em PDF"
+        "Todos os dados da consulta básica",
+        "Histórico completo de débitos e multas",
+        "Situação de IPVA e licenciamento",
+        "Verificação de restrições e alienação",
+        "Histórico de recalls do fabricante",
+        "Relatório em PDF para download",
+        "Suporte por e-mail"
       ],
-      cta: "Começar com este plano",
+      cta: "Obter relatório completo",
       popular: true,
       onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     {
-      name: "Premium",
+      name: "Premium Plus",
       price: "R$ 39,90",
-      headline: "Segurança Total",
-      description: "Segurança total e rastreabilidade completa",
+      headline: "Máxima Segurança",
+      description: "Análise completa com laudo detalhado",
       features: [
-        "Tudo do plano Completa",
-        "Verificação de sinistros",
-        "Histórico de recalls",
-        "Laudo com fotos",
-        "Rastreamento de leilão",
-        "Suporte prioritário",
-        "Relatórios ilimitados"
+        "Todos os benefícios do plano anterior",
+        "Histórico de sinistros e batidas",
+        "Verificação de leilão e salvados",
+        "Laudo fotográfico (quando disponível)",
+        "Análise de odômetro adulterado",
+        "Histórico de proprietários anteriores",
+        "Consultas ilimitadas por 30 dias",
+        "Suporte prioritário via WhatsApp"
       ],
-      cta: "Começar com este plano",
+      cta: "Obter análise premium",
       popular: false,
       onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' })
     }
@@ -65,10 +67,10 @@ export const PlansSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Escolha o plano ideal para você
+            Escolha o plano ideal para sua necessidade
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Transparência total com dados oficiais verificados
+            Informações verificadas direto das bases oficiais do DETRAN
           </p>
         </div>
 
