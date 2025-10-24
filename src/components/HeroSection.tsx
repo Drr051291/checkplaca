@@ -71,11 +71,7 @@ export const HeroSection = () => {
 
           <div className="space-y-4">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              Consulte o histórico completo de{" "}
-              <span className="bg-gradient-hero bg-clip-text text-transparent">
-                qualquer veículo
-              </span>
-              {" "}pela placa
+              Consulte o histórico completo de qualquer veículo pela placa
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Dados oficiais do DETRAN • Resultado em segundos • Sem cadastro
