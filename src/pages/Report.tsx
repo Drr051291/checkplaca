@@ -335,57 +335,61 @@ const Report = () => {
           {/* Upgrade CTAs - Only show if user hasn't paid */}
           {!hasPaidPlan && (
             <>
-              <Card className="shadow-strong border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
-                <CardContent className="p-8">
-                  <div className="text-center space-y-6">
+              <Card className="shadow-strong border-2 border-accent/20 bg-secondary/20">
+                <CardContent className="p-8 md:p-12">
+                  <div className="text-center space-y-8">
                     <div>
-                      <Badge className="bg-accent/10 text-accent border-accent/20 px-4 py-1.5 mb-4">
+                      <Badge className="bg-accent/10 text-accent border-accent/30 px-5 py-2 mb-6">
                         <Lock className="w-4 h-4 mr-2" />
                         Conteúdo Bloqueado
                       </Badge>
-                      <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                      <h2 className="text-3xl md:text-4xl font-bold mb-4">
                         Quer ver o relatório completo?
                       </h2>
-                      <p className="text-muted-foreground text-lg">
+                      <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                         Desbloqueie informações detalhadas sobre sinistros, recalls, débitos e muito mais
                       </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
                       {/* Plano Completo */}
-                      <Card className="relative overflow-hidden hover:shadow-strong transition-smooth">
-                        <CardHeader className="bg-gradient-primary text-white">
-                          <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5" />
-                            Relatório Completo
-                          </CardTitle>
-                          <div className="text-3xl font-bold">R$ 19,90</div>
+                      <Card className="relative overflow-hidden hover:shadow-strong transition-smooth bg-background">
+                        <CardHeader className="text-center pb-4">
+                          <div className="mb-4">
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Sparkles className="w-6 h-6 text-primary" />
+                            </div>
+                            <CardTitle className="text-2xl mb-2">Relatório Completo</CardTitle>
+                            <div className="text-4xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
+                              R$ 19,90
+                            </div>
+                          </div>
                         </CardHeader>
-                        <CardContent className="p-6">
-                          <ul className="space-y-3 mb-6">
-                            <li className="flex items-start gap-2">
+                        <CardContent className="px-6 pb-6">
+                          <ul className="space-y-3 mb-8">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Dados completos do veículo</span>
+                              <span className="text-sm">Dados completos do veículo</span>
                             </li>
-                            <li className="flex items-start gap-2">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Histórico de sinistros</span>
+                              <span className="text-sm">Histórico de sinistros</span>
                             </li>
-                            <li className="flex items-start gap-2">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Débitos e multas</span>
+                              <span className="text-sm">Débitos e multas</span>
                             </li>
-                            <li className="flex items-start gap-2">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Recall do fabricante</span>
+                              <span className="text-sm">Recall do fabricante</span>
                             </li>
-                            <li className="flex items-start gap-2">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Download em PDF</span>
+                              <span className="text-sm">Download em PDF</span>
                             </li>
                           </ul>
                           <Button 
-                            className="w-full h-12 gradient-primary font-semibold"
+                            className="w-full h-12 gradient-primary font-semibold hover:shadow-glow transition-all"
                             onClick={() => navigate(`/checkout?reportId=${reportId}&plan=completo&plate=${plate}`)}
                           >
                             Comprar Agora
@@ -394,48 +398,52 @@ const Report = () => {
                       </Card>
 
                       {/* Plano Premium */}
-                      <Card className="relative overflow-hidden border-2 border-accent hover:shadow-strong transition-smooth">
-                        <div className="absolute top-4 right-4">
-                          <Badge className="bg-accent text-accent-foreground">
+                      <Card className="relative overflow-hidden border-2 border-accent/40 hover:shadow-strong transition-smooth bg-gradient-to-br from-accent/5 to-accent/10">
+                        <div className="absolute top-4 right-4 z-10">
+                          <Badge className="bg-white text-accent font-semibold shadow-soft px-4 py-1.5">
                             Mais Popular
                           </Badge>
                         </div>
-                        <CardHeader className="bg-gradient-to-br from-accent to-accent/80 text-white">
-                          <CardTitle className="flex items-center gap-2">
-                            <Crown className="w-5 h-5" />
-                            Premium Plus
-                          </CardTitle>
-                          <div className="text-3xl font-bold">R$ 39,90</div>
+                        <CardHeader className="bg-gradient-accent text-white text-center pb-4 pt-6">
+                          <div className="mb-4">
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/20 flex items-center justify-center">
+                              <Crown className="w-6 h-6 text-white" />
+                            </div>
+                            <CardTitle className="text-2xl mb-2">Premium Plus</CardTitle>
+                            <div className="text-4xl font-bold">
+                              R$ 39,90
+                            </div>
+                          </div>
                         </CardHeader>
-                        <CardContent className="p-6">
-                          <ul className="space-y-3 mb-6">
-                            <li className="flex items-start gap-2">
+                        <CardContent className="px-6 pb-6 pt-6 bg-background">
+                          <ul className="space-y-3 mb-8">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="font-semibold">Tudo do plano Completo</span>
+                              <span className="text-sm font-semibold">Tudo do plano Completo</span>
                             </li>
-                            <li className="flex items-start gap-2">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Histórico de leilão</span>
+                              <span className="text-sm">Histórico de leilão</span>
                             </li>
-                            <li className="flex items-start gap-2">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Rastreamento de roubo</span>
+                              <span className="text-sm">Rastreamento de roubo</span>
                             </li>
-                            <li className="flex items-start gap-2">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Análise de mercado</span>
+                              <span className="text-sm">Análise de mercado</span>
                             </li>
-                            <li className="flex items-start gap-2">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Suporte prioritário</span>
+                              <span className="text-sm">Suporte prioritário</span>
                             </li>
-                            <li className="flex items-start gap-2">
+                            <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span>Validade de 30 dias</span>
+                              <span className="text-sm">Validade de 30 dias</span>
                             </li>
                           </ul>
                           <Button 
-                            className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+                            className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-semibold shadow-soft hover:shadow-strong transition-all"
                             onClick={() => navigate(`/checkout?reportId=${reportId}&plan=premium&plate=${plate}`)}
                           >
                             Comprar Agora
@@ -445,7 +453,7 @@ const Report = () => {
                     </div>
 
                     <p className="text-sm text-muted-foreground">
-                      💳 Pagamento seguro via PIX, Boleto ou Cartão • 🔒 Dados protegidos
+                      💳 Pagamento seguro via PIX ou Cartão • 🔒 Dados protegidos
                     </p>
                   </div>
                 </CardContent>
