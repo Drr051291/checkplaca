@@ -79,7 +79,7 @@ export const HeroSection = () => {
           <div className="space-y-6 animate-scale-in">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-tight tracking-tight">
               Consulte o histórico completo de{" "}
-              <span className="bg-gradient-hero bg-clip-text text-transparent">
+              <span className="bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
                 qualquer veículo
               </span>
             </h1>

@@ -207,7 +207,7 @@ const Report = () => {
                 <ArrowLeft className="mr-2" />
                 Nova Consulta
               </Button>
-              <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
                 AutoCheck Express
               </h1>
             </div>
