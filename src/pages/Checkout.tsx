@@ -160,64 +160,102 @@ const Checkout = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {paymentMethod === 'PIX' && paymentData.pixQrCode && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="text-center">
                       <img 
                         src={`data:image/png;base64,${paymentData.pixQrCode}`} 
                         alt="QR Code PIX" 
-                        className="mx-auto border-4 border-border rounded-lg"
+                        className="mx-auto border-4 border-border rounded-lg w-64 h-64"
                       />
                       <p className="text-sm text-muted-foreground mt-4">
                         Escaneie o QR Code com o app do seu banco
                       </p>
                     </div>
 
-                    <div>
-                      <Label>PIX Copia e Cola</Label>
-                      <div className="flex gap-2 mt-2">
-                        <Input 
-                          value={paymentData.pixCopyPaste} 
-                          readOnly 
-                          className="font-mono text-xs"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => copyToClipboard(paymentData.pixCopyPaste, 'Código PIX')}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
+                    <div className="border-t border-b py-6">
+                      <Label className="text-base font-semibold mb-3 block">
+                        Ou pague usando o PIX Copia e Cola:
+                      </Label>
+                      
+                      <div className="bg-secondary/30 p-4 rounded-lg mb-3">
+                        <p className="text-xs text-muted-foreground mb-2">Chave PIX:</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-sm font-mono break-all bg-background p-3 rounded border">
+                            {paymentData.pixCopyPaste}
+                          </code>
+                        </div>
                       </div>
+
+                      <Button
+                        type="button"
+                        size="lg"
+                        className="w-full h-14 gradient-primary font-semibold"
+                        onClick={() => copyToClipboard(paymentData.pixCopyPaste, 'Código PIX')}
+                      >
+                        <Copy className="w-5 h-5 mr-2" />
+                        Copiar Código PIX
+                      </Button>
+
+                      <p className="text-xs text-center text-muted-foreground mt-3">
+                        Cole este código no aplicativo do seu banco para realizar o pagamento
+                      </p>
                     </div>
                   </div>
                 )}
 
                 {paymentMethod === 'BOLETO' && paymentData.bankSlipUrl && (
                   <div className="space-y-4">
+                    <div className="text-center mb-4">
+                      <Barcode className="w-16 h-16 mx-auto text-primary mb-2" />
+                      <p className="text-muted-foreground">
+                        Seu boleto foi gerado com sucesso
+                      </p>
+                    </div>
+
                     <Button
+                      size="lg"
                       onClick={() => window.open(paymentData.bankSlipUrl, '_blank')}
-                      className="w-full h-14 gradient-primary"
+                      className="w-full h-14 gradient-primary font-semibold"
                     >
                       <Barcode className="mr-2" />
-                      Visualizar Boleto
+                      Visualizar e Imprimir Boleto
                     </Button>
+
+                    <div className="text-sm text-center text-muted-foreground space-y-1">
+                      <p>O boleto também foi enviado para o seu e-mail</p>
+                      <p>Prazo de pagamento: até 3 dias úteis</p>
+                    </div>
                   </div>
                 )}
 
-                <div className="border-t pt-4">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-muted-foreground">Valor</span>
-                    <span className="font-bold text-lg">R$ {currentPlan.price.toFixed(2)}</span>
+                <div className="bg-secondary/20 rounded-lg p-6 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Plano</span>
+                    <span className="font-semibold">{currentPlan.name}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Placa</span>
+                    <span className="font-mono font-bold">{plate}</span>
+                  </div>
+                  <div className="border-t pt-3 flex justify-between items-center">
+                    <span className="text-lg font-semibold">Valor Total</span>
+                    <span className="font-bold text-2xl text-accent">
+                      R$ {currentPlan.price.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2">
                     <span className="text-muted-foreground">Status</span>
-                    <Badge variant="outline">Aguardando Pagamento</Badge>
+                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">
+                      Aguardando Pagamento
+                    </Badge>
                   </div>
                 </div>
 
-                <p className="text-sm text-center text-muted-foreground">
-                  Após a confirmação do pagamento, seu relatório será liberado automaticamente
-                </p>
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm text-center text-blue-900 dark:text-blue-100">
+                    ⏱️ Após a confirmação do pagamento, seu relatório será liberado <strong>automaticamente</strong>
+                  </p>
+                </div>
 
                 <Button
                   onClick={() => navigate(`/report?id=${reportId}`)}
