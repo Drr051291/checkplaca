@@ -1,11 +1,88 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { LogOut, Search, DollarSign, FileText, TrendingUp, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Session } from "@supabase/supabase-js";
 
 const AdminDashboard = () => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check authentication and admin role
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate("/auth");
+          return;
+        }
+
+        setSession(session);
+
+        // Check if user has admin role
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .single();
+
+        if (roleError || !roleData) {
+          toast({
+            title: "Acesso negado",
+            description: "Você não tem permissão para acessar esta área.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          navigate("/");
+          return;
+        }
+
+        setIsAdmin(true);
+      } catch (error) {
+        console.error("[AdminDashboard] Erro ao verificar autenticação:", error);
+        navigate("/auth");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Logout realizado",
+      description: "Até logo!",
+    });
+    navigate("/");
+  };
+
+  if (loading || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Verificando permissões...</p>
+      </div>
+    );
+  }
 
   // Mock statistics data
   const stats = {
@@ -24,10 +101,6 @@ const AdminDashboard = () => {
     { id: 5, plate: "JKL7890", date: "2025-01-18 13:21", type: "Pago", value: "R$ 9,90" }
   ];
 
-  const handleLogout = () => {
-    navigate('/admin/login');
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -37,14 +110,19 @@ const AdminDashboard = () => {
             <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
               AutoCheck Express - Admin
             </h1>
-            <Button 
-              variant="ghost"
-              onClick={handleLogout}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <LogOut className="mr-2" />
-              Sair
-            </Button>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                {session?.user.email}
+              </p>
+              <Button 
+                variant="ghost"
+                onClick={handleLogout}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="mr-2" />
+                Sair
+              </Button>
+            </div>
           </div>
         </div>
       </header>

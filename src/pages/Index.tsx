@@ -50,7 +50,7 @@ const Index = () => {
               </a>
               <Button 
                 variant="ghost" 
-                onClick={() => navigate('/admin/login')}
+                onClick={() => navigate('/auth')}
                 className="text-sm font-medium"
               >
                 Entrar
