@@ -1,59 +1,241 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, CreditCard, Lock, CheckCircle } from "lucide-react";
+import { ArrowLeft, Lock, CheckCircle, Copy, QrCode, Barcode, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const reportId = searchParams.get('reportId') || '';
+  const planType = (searchParams.get('plan') || 'completo') as 'completo' | 'premium';
   const plate = searchParams.get('plate') || '';
   
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'BOLETO' | 'CREDIT_CARD'>('PIX');
+  const [paymentData, setPaymentData] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    cardNumber: '',
-    expiry: '',
-    cvv: ''
+    phone: '',
+    cpf: '',
   });
+
+  const planDetails = {
+    completo: {
+      name: 'Relatório Completo',
+      price: 19.90,
+      features: [
+        'Dados completos do veículo',
+        'Histórico de sinistros',
+        'Débitos e multas',
+        'Recall do fabricante',
+        'Download em PDF',
+      ],
+    },
+    premium: {
+      name: 'Relatório Premium Plus',
+      price: 39.90,
+      features: [
+        'Tudo do plano Completo',
+        'Histórico de leilão',
+        'Rastreamento de roubo',
+        'Análise de mercado',
+        'Suporte prioritário',
+        'Validade de 30 dias',
+      ],
+    },
+  };
+
+  const currentPlan = planDetails[planType];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const formatCardNumber = (value: string) => {
-    const cleaned = value.replace(/\s/g, '');
-    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
-    return formatted.slice(0, 19); // 16 digits + 3 spaces
+  const formatCPF = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
   };
 
-  const formatExpiry = (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      return cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4);
-    }
-    return cleaned;
+  const formatPhone = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .replace(/(-\d{4})\d+?$/, '$1');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.name || !formData.email || !formData.phone || !formData.cpf) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          reportId,
+          planType,
+          customerName: formData.name,
+          customerEmail: formData.email,
+          customerPhone: formData.phone.replace(/\D/g, ''),
+          customerCpf: formData.cpf.replace(/\D/g, ''),
+          paymentMethod,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setPaymentData(data);
+        toast({
+          title: "Pagamento gerado!",
+          description: "Complete o pagamento para liberar seu relatório.",
+        });
+      } else {
+        throw new Error(data.error || 'Erro ao processar pagamento');
+      }
+    } catch (error: any) {
+      console.error('[Checkout] Erro:', error);
+      toast({
+        title: "Erro no pagamento",
+        description: error.message || "Não foi possível processar o pagamento. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
       setIsProcessing(false);
-      toast.success("Pagamento aprovado!");
-      navigate(`/report?plate=${plate}`);
-    }, 2000);
+    }
   };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copiado!",
+      description: `${label} copiado para a área de transferência.`,
+    });
+  };
+
+  if (paymentData) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-4">
+            <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+              AutoCheck Express
+            </h1>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-2xl mx-auto">
+            <Card className="shadow-strong">
+              <CardHeader className="text-center">
+                <CheckCircle className="w-16 h-16 text-accent mx-auto mb-4" />
+                <CardTitle className="text-2xl">Pagamento Gerado</CardTitle>
+                <CardDescription>
+                  Complete o pagamento para liberar seu relatório
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {paymentMethod === 'PIX' && paymentData.pixQrCode && (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <img 
+                        src={`data:image/png;base64,${paymentData.pixQrCode}`} 
+                        alt="QR Code PIX" 
+                        className="mx-auto border-4 border-border rounded-lg"
+                      />
+                      <p className="text-sm text-muted-foreground mt-4">
+                        Escaneie o QR Code com o app do seu banco
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label>PIX Copia e Cola</Label>
+                      <div className="flex gap-2 mt-2">
+                        <Input 
+                          value={paymentData.pixCopyPaste} 
+                          readOnly 
+                          className="font-mono text-xs"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => copyToClipboard(paymentData.pixCopyPaste, 'Código PIX')}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethod === 'BOLETO' && paymentData.bankSlipUrl && (
+                  <div className="space-y-4">
+                    <Button
+                      onClick={() => window.open(paymentData.bankSlipUrl, '_blank')}
+                      className="w-full h-14 gradient-primary"
+                    >
+                      <Barcode className="mr-2" />
+                      Visualizar Boleto
+                    </Button>
+                  </div>
+                )}
+
+                <div className="border-t pt-4">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-muted-foreground">Valor</span>
+                    <span className="font-bold text-lg">R$ {currentPlan.price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge variant="outline">Aguardando Pagamento</Badge>
+                  </div>
+                </div>
+
+                <p className="text-sm text-center text-muted-foreground">
+                  Após a confirmação do pagamento, seu relatório será liberado automaticamente
+                </p>
+
+                <Button
+                  onClick={() => navigate(`/report?id=${reportId}`)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Voltar ao relatório
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <Button 
@@ -71,107 +253,135 @@ const Checkout = () => {
       </header>
 
       <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-5 gap-8">
             {/* Payment Form */}
             <div className="md:col-span-3">
               <Card className="shadow-strong">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="w-6 h-6" />
-                    Informações de Pagamento
-                  </CardTitle>
+                  <CardTitle>Finalizar Compra</CardTitle>
+                  <CardDescription>Escolha a forma de pagamento</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                      <Label htmlFor="name">Nome completo</Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="Como está no cartão"
-                        value={formData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        required
-                        className="mt-2"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email">E-mail</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        required
-                        className="mt-2"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="cardNumber">Número do cartão</Label>
-                      <Input
-                        id="cardNumber"
-                        type="text"
-                        placeholder="1234 5678 9012 3456"
-                        value={formData.cardNumber}
-                        onChange={(e) => handleInputChange('cardNumber', formatCardNumber(e.target.value))}
-                        required
-                        className="mt-2"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Dados Pessoais */}
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">Seus dados</h3>
+                      
                       <div>
-                        <Label htmlFor="expiry">Validade</Label>
+                        <Label htmlFor="name">Nome completo *</Label>
                         <Input
-                          id="expiry"
+                          id="name"
                           type="text"
-                          placeholder="MM/AA"
-                          value={formData.expiry}
-                          onChange={(e) => handleInputChange('expiry', formatExpiry(e.target.value))}
-                          maxLength={5}
+                          placeholder="João Silva"
+                          value={formData.name}
+                          onChange={(e) => handleInputChange('name', e.target.value)}
                           required
                           className="mt-2"
                         />
                       </div>
+
                       <div>
-                        <Label htmlFor="cvv">CVV</Label>
+                        <Label htmlFor="email">E-mail *</Label>
                         <Input
-                          id="cvv"
-                          type="text"
-                          placeholder="123"
-                          value={formData.cvv}
-                          onChange={(e) => handleInputChange('cvv', e.target.value.replace(/\D/g, '').slice(0, 4))}
-                          maxLength={4}
+                          id="email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange('email', e.target.value)}
                           required
                           className="mt-2"
                         />
                       </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="cpf">CPF *</Label>
+                          <Input
+                            id="cpf"
+                            type="text"
+                            placeholder="000.000.000-00"
+                            value={formData.cpf}
+                            onChange={(e) => handleInputChange('cpf', formatCPF(e.target.value))}
+                            maxLength={14}
+                            required
+                            className="mt-2"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="phone">Telefone *</Label>
+                          <Input
+                            id="phone"
+                            type="text"
+                            placeholder="(00) 00000-0000"
+                            value={formData.phone}
+                            onChange={(e) => handleInputChange('phone', formatPhone(e.target.value))}
+                            maxLength={15}
+                            required
+                            className="mt-2"
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="pt-4">
-                      <Button 
-                        type="submit"
-                        disabled={isProcessing}
-                        className="w-full h-14 text-lg font-semibold gradient-primary hover:opacity-90 transition-smooth"
-                      >
-                        {isProcessing ? (
-                          "Processando..."
-                        ) : (
-                          <>
-                            <Lock className="mr-2" />
-                            Pagar R$ 9,90
-                          </>
-                        )}
-                      </Button>
+                    {/* Forma de Pagamento */}
+                    <div className="space-y-4 border-t pt-6">
+                      <h3 className="font-semibold">Forma de pagamento</h3>
+                      
+                      <RadioGroup value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
+                        <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50">
+                          <RadioGroupItem value="PIX" id="pix" />
+                          <Label htmlFor="pix" className="flex-1 cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              <QrCode className="w-5 h-5" />
+                              <span className="font-semibold">PIX</span>
+                              <Badge variant="secondary" className="ml-auto">Aprovação imediata</Badge>
+                            </div>
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50">
+                          <RadioGroupItem value="BOLETO" id="boleto" />
+                          <Label htmlFor="boleto" className="flex-1 cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              <Barcode className="w-5 h-5" />
+                              <span className="font-semibold">Boleto</span>
+                              <span className="text-sm text-muted-foreground ml-auto">Até 3 dias úteis</span>
+                            </div>
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50">
+                          <RadioGroupItem value="CREDIT_CARD" id="credit" />
+                          <Label htmlFor="credit" className="flex-1 cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="w-5 h-5" />
+                              <span className="font-semibold">Cartão de Crédito</span>
+                              <Badge variant="secondary" className="ml-auto">Aprovação imediata</Badge>
+                            </div>
+                          </Label>
+                        </div>
+                      </RadioGroup>
                     </div>
+
+                    <Button 
+                      type="submit"
+                      disabled={isProcessing}
+                      className="w-full h-14 text-lg font-semibold gradient-primary"
+                    >
+                      {isProcessing ? (
+                        "Processando..."
+                      ) : (
+                        <>
+                          <Lock className="mr-2" />
+                          Finalizar Pagamento - R$ {currentPlan.price.toFixed(2)}
+                        </>
+                      )}
+                    </Button>
 
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                       <Lock className="w-4 h-4" />
-                      <span>Pagamento 100% seguro e criptografado</span>
+                      <span>Pagamento 100% seguro via Asaas</span>
                     </div>
                   </form>
                 </CardContent>
@@ -190,44 +400,27 @@ const Checkout = () => {
                     <div className="text-xl font-bold tracking-wider">{plate}</div>
                   </div>
 
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Plano selecionado</div>
+                    <div className="font-semibold">{currentPlan.name}</div>
+                  </div>
+
                   <div className="border-t border-border pt-4">
-                    <div className="text-sm text-muted-foreground mb-3">Incluído no relatório:</div>
+                    <div className="text-sm text-muted-foreground mb-3">Incluído:</div>
                     <div className="space-y-2">
-                      <div className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-                        <span>Débitos de IPVA</span>
-                      </div>
-                      <div className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-                        <span>Multas e infrações</span>
-                      </div>
-                      <div className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-                        <span>Histórico de sinistros</span>
-                      </div>
-                      <div className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-                        <span>Restrições judiciais</span>
-                      </div>
-                      <div className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-                        <span>Recalls do fabricante</span>
-                      </div>
-                      <div className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-                        <span>Download em PDF</span>
-                      </div>
+                      {currentPlan.features.map((feature, index) => (
+                        <div key={index} className="flex items-start gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+                          <span>{feature}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
                   <div className="border-t border-border pt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-semibold">R$ 9,90</span>
-                    </div>
                     <div className="flex justify-between items-center text-lg font-bold">
                       <span>Total</span>
-                      <span className="text-accent">R$ 9,90</span>
+                      <span className="text-accent">R$ {currentPlan.price.toFixed(2)}</span>
                     </div>
                   </div>
                 </CardContent>

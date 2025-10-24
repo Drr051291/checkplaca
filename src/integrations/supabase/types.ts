@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      payments: {
+        Row: {
+          amount: number
+          asaas_customer_id: string
+          asaas_payment_id: string
+          created_at: string | null
+          id: string
+          payment_data: Json | null
+          payment_method: string
+          plan_type: string
+          report_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          asaas_customer_id: string
+          asaas_payment_id: string
+          created_at?: string | null
+          id?: string
+          payment_data?: Json | null
+          payment_method: string
+          plan_type: string
+          report_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          asaas_customer_id?: string
+          asaas_payment_id?: string
+          created_at?: string | null
+          id?: string
+          payment_data?: Json | null
+          payment_method?: string
+          plan_type?: string
+          report_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

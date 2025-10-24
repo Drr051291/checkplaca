@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Car, AlertTriangle, CheckCircle, XCircle, FileText, Loader2, Share2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Download, Car, AlertTriangle, CheckCircle, XCircle, FileText, Loader2, Share2, Image as ImageIcon, Lock, Sparkles, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ const Report = () => {
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState<any>(null);
   const [generating, setGenerating] = useState(false);
+  const [hasPaidPlan, setHasPaidPlan] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +43,16 @@ const Report = () => {
         if (error) throw error;
 
         setReportData(data.report_data);
+
+        // Check if user has paid for this report
+        const { data: paymentData } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('report_id', reportId)
+          .eq('status', 'paid')
+          .maybeSingle();
+
+        setHasPaidPlan(!!paymentData);
       } catch (error) {
         console.error('Erro ao carregar relatório:', error);
         toast({
@@ -321,6 +332,131 @@ const Report = () => {
             </CardContent>
           </Card>
 
+          {/* Upgrade CTAs - Only show if user hasn't paid */}
+          {!hasPaidPlan && (
+            <>
+              <Card className="shadow-strong border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+                <CardContent className="p-8">
+                  <div className="text-center space-y-6">
+                    <div>
+                      <Badge className="bg-accent/10 text-accent border-accent/20 px-4 py-1.5 mb-4">
+                        <Lock className="w-4 h-4 mr-2" />
+                        Conteúdo Bloqueado
+                      </Badge>
+                      <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                        Quer ver o relatório completo?
+                      </h2>
+                      <p className="text-muted-foreground text-lg">
+                        Desbloqueie informações detalhadas sobre sinistros, recalls, débitos e muito mais
+                      </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                      {/* Plano Completo */}
+                      <Card className="relative overflow-hidden hover:shadow-strong transition-smooth">
+                        <CardHeader className="bg-gradient-primary text-white">
+                          <CardTitle className="flex items-center gap-2">
+                            <Sparkles className="w-5 h-5" />
+                            Relatório Completo
+                          </CardTitle>
+                          <div className="text-3xl font-bold">R$ 19,90</div>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <ul className="space-y-3 mb-6">
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Dados completos do veículo</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Histórico de sinistros</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Débitos e multas</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Recall do fabricante</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Download em PDF</span>
+                            </li>
+                          </ul>
+                          <Button 
+                            className="w-full h-12 gradient-primary font-semibold"
+                            onClick={() => navigate(`/checkout?reportId=${reportId}&plan=completo&plate=${plate}`)}
+                          >
+                            Comprar Agora
+                          </Button>
+                        </CardContent>
+                      </Card>
+
+                      {/* Plano Premium */}
+                      <Card className="relative overflow-hidden border-2 border-accent hover:shadow-strong transition-smooth">
+                        <div className="absolute top-4 right-4">
+                          <Badge className="bg-accent text-accent-foreground">
+                            Mais Popular
+                          </Badge>
+                        </div>
+                        <CardHeader className="bg-gradient-to-br from-accent to-accent/80 text-white">
+                          <CardTitle className="flex items-center gap-2">
+                            <Crown className="w-5 h-5" />
+                            Premium Plus
+                          </CardTitle>
+                          <div className="text-3xl font-bold">R$ 39,90</div>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <ul className="space-y-3 mb-6">
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span className="font-semibold">Tudo do plano Completo</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Histórico de leilão</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Rastreamento de roubo</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Análise de mercado</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Suporte prioritário</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span>Validade de 30 dias</span>
+                            </li>
+                          </ul>
+                          <Button 
+                            className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+                            onClick={() => navigate(`/checkout?reportId=${reportId}&plan=premium&plate=${plate}`)}
+                          >
+                            Comprar Agora
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground">
+                      💳 Pagamento seguro via PIX, Boleto ou Cartão • 🔒 Dados protegidos
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Resto do conteúdo só aparece se tiver pago */}
+          {hasPaidPlan && (
+            <>
+
           {/* Technical Data Section */}
           {(dadosTecnicos && Object.keys(dadosTecnicos).length > 0) && (
             <Card className="shadow-soft">
@@ -496,45 +632,47 @@ const Report = () => {
               )}
             </CardContent>
           </Card>
+          </>
+          )}
 
-
-
-          {/* Footer Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-            <Button 
-              onClick={handleDownloadPDF}
-              size="lg"
-              className="gradient-primary"
-              disabled={generating}
-            >
-              <Download className="mr-2" />
-              {generating ? 'Gerando PDF...' : 'Baixar Relatório em PDF'}
-            </Button>
-            <Button 
-              onClick={handleDownloadImage}
-              size="lg"
-              className="gradient-accent"
-              disabled={generating}
-            >
-              <ImageIcon className="mr-2" />
-              {generating ? 'Gerando Imagem...' : 'Baixar como Imagem'}
-            </Button>
-            <Button 
-              onClick={handleShareWhatsApp}
-              size="lg"
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Share2 className="mr-2" />
-              Compartilhar WhatsApp
-            </Button>
-            <Button 
-              onClick={() => navigate('/')}
-              size="lg"
-              variant="outline"
-            >
-              Fazer Nova Consulta
-            </Button>
-          </div>
+          {/* Footer Actions - Only show for paid users */}
+          {hasPaidPlan && (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+              <Button 
+                onClick={handleDownloadPDF}
+                size="lg"
+                className="gradient-primary"
+                disabled={generating}
+              >
+                <Download className="mr-2" />
+                {generating ? 'Gerando PDF...' : 'Baixar Relatório em PDF'}
+              </Button>
+              <Button 
+                onClick={handleDownloadImage}
+                size="lg"
+                className="gradient-accent"
+                disabled={generating}
+              >
+                <ImageIcon className="mr-2" />
+                {generating ? 'Gerando Imagem...' : 'Baixar como Imagem'}
+              </Button>
+              <Button 
+                onClick={handleShareWhatsApp}
+                size="lg"
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Share2 className="mr-2" />
+                Compartilhar WhatsApp
+              </Button>
+              <Button 
+                onClick={() => navigate('/')}
+                size="lg"
+                variant="outline"
+              >
+                Fazer Nova Consulta
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
