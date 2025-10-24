@@ -39,7 +39,10 @@ serve(async (req) => {
     console.log('Solicitando relatório...');
 
     // Autenticação Basic: email:apiKey (conforme documentação)
-    const basicAuth = `Basic ${btoa(`${apiEmail}:${apiKey}`)}`;
+    const credentials = `${apiEmail}:${apiKey}`;
+    // Encode credentials safely even if email has non-ASCII chars
+    const encodedCredentials = btoa(unescape(encodeURIComponent(credentials)));
+    const basicAuth = `Basic ${encodedCredentials}`;
 
     // Consulta direta por placa
     console.log('Chamando endpoint consultarPlaca...');
@@ -53,8 +56,17 @@ serve(async (req) => {
 
     if (!consultaResponse.ok) {
       const errorText = await consultaResponse.text();
-      console.error('Erro ao consultar placa:', errorText);
-      throw new Error(`Erro ao consultar placa: ${consultaResponse.status}`);
+      let message = `Erro ao consultar placa: ${consultaResponse.status}`;
+      try {
+        const maybeJson = JSON.parse(errorText);
+        if (maybeJson?.mensagem) message = maybeJson.mensagem;
+        if (maybeJson?.error) message = maybeJson.error;
+      } catch {}
+      console.error('Erro ao consultar placa:', message);
+      return new Response(
+        JSON.stringify({ success: false, error: message }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: consultaResponse.status }
+      );
     }
 
     const consultaData = await consultaResponse.json();
