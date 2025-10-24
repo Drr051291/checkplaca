@@ -21,8 +21,8 @@ serve(async (req) => {
 
     console.log('Consultando veículo na API Consultar Placa:', plate);
 
-    const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY');
-    const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL');
+    const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY')?.trim();
+    const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL')?.trim();
     if (!apiKey || !apiEmail) {
       throw new Error('Credenciais da Consultar Placa não configuradas (email e api key)');
     }
