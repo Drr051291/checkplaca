@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Car, AlertTriangle, CheckCircle, XCircle, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Car, AlertTriangle, CheckCircle, XCircle, FileText, Loader2, Share2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const Report = () => {
   const [searchParams] = useSearchParams();
@@ -15,6 +17,8 @@ const Report = () => {
   
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState<any>(null);
+  const [generating, setGenerating] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -54,10 +58,103 @@ const Report = () => {
     fetchReport();
   }, [reportId, navigate, toast]);
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
+    if (!reportRef.current) return;
+    
+    setGenerating(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`relatorio-${plate}-${new Date().getTime()}.pdf`);
+      
+      toast({
+        title: "PDF baixado com sucesso!",
+        description: "O relatório foi salvo no seu dispositivo",
+      });
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast({
+        title: "Erro ao gerar PDF",
+        description: "Não foi possível gerar o PDF. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    if (!reportRef.current) return;
+    
+    setGenerating(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `relatorio-${plate}-${new Date().getTime()}.png`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+          
+          toast({
+            title: "Imagem baixada com sucesso!",
+            description: "O relatório foi salvo como imagem",
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao gerar imagem:', error);
+      toast({
+        title: "Erro ao gerar imagem",
+        description: "Não foi possível gerar a imagem. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    if (!reportRef.current) return;
+    
+    const vehicleName = vehicleInfo?.marca_modelo || rawData?.dados_veiculo?.modelo || 'Veículo';
+    const message = `🚗 *Relatório de Veículo - AutoCheck Express*\n\n` +
+      `📋 Placa: *${plate}*\n` +
+      `🚘 ${vehicleName}\n` +
+      `📅 Ano: ${vehicleInfo?.ano_fabricacao}/${vehicleInfo?.ano_modelo}\n\n` +
+      `✅ Consulta realizada com sucesso!\n` +
+      `🔍 Acesse: ${window.location.origin}`;
+    
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+    
     toast({
-      title: "Função em desenvolvimento",
-      description: "A geração de PDF estará disponível em breve",
+      title: "Compartilhar no WhatsApp",
+      description: "Abrindo WhatsApp para compartilhar...",
     });
   };
 
@@ -103,19 +200,38 @@ const Report = () => {
                 AutoCheck Express
               </h1>
             </div>
-            <Button 
-              onClick={handleDownloadPDF}
-              className="gradient-accent"
-            >
-              <Download className="mr-2" />
-              Baixar PDF
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                onClick={handleDownloadPDF}
+                className="gradient-primary"
+                disabled={generating}
+              >
+                <Download className="mr-2" />
+                {generating ? 'Gerando...' : 'PDF'}
+              </Button>
+              <Button 
+                onClick={handleDownloadImage}
+                className="gradient-accent"
+                disabled={generating}
+              >
+                <ImageIcon className="mr-2" />
+                {generating ? 'Gerando...' : 'Imagem'}
+              </Button>
+              <Button 
+                onClick={handleShareWhatsApp}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={generating}
+              >
+                <Share2 className="mr-2" />
+                WhatsApp
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-12">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div ref={reportRef} className="max-w-6xl mx-auto space-y-6 bg-background">
           {/* Header Card */}
           <Card className="shadow-strong">
             <CardHeader className="bg-gradient-primary text-white">
@@ -388,10 +504,28 @@ const Report = () => {
             <Button 
               onClick={handleDownloadPDF}
               size="lg"
-              className="gradient-accent"
+              className="gradient-primary"
+              disabled={generating}
             >
               <Download className="mr-2" />
-              Baixar Relatório em PDF
+              {generating ? 'Gerando PDF...' : 'Baixar Relatório em PDF'}
+            </Button>
+            <Button 
+              onClick={handleDownloadImage}
+              size="lg"
+              className="gradient-accent"
+              disabled={generating}
+            >
+              <ImageIcon className="mr-2" />
+              {generating ? 'Gerando Imagem...' : 'Baixar como Imagem'}
+            </Button>
+            <Button 
+              onClick={handleShareWhatsApp}
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Share2 className="mr-2" />
+              Compartilhar WhatsApp
             </Button>
             <Button 
               onClick={() => navigate('/')}
