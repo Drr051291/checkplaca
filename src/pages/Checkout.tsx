@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Lock, CheckCircle, Copy, QrCode, CreditCard } from "lucide-react";
+import { ArrowLeft, Lock, CheckCircle, Copy, QrCode, CreditCard, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
   const [paymentData, setPaymentData] = useState<any>(null);
+  const [fetchingPix, setFetchingPix] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -137,6 +138,35 @@ const Checkout = () => {
     });
   };
 
+  const fetchPix = async () => {
+    if (!paymentData?.paymentId) return;
+    try {
+      setFetchingPix(true);
+      const { data, error } = await supabase.functions.invoke('check-payment', {
+        body: { paymentId: paymentData.paymentId },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setPaymentData((prev: any) => ({
+          ...prev,
+          pixQrCode: data.pixQrCode || prev?.pixQrCode,
+          pixCopyPaste: data.payload || prev?.pixCopyPaste,
+          payload: data.payload || prev?.payload,
+        }));
+      }
+    } catch (e) {
+      console.error('[Checkout] Erro ao buscar PIX:', e);
+      toast({ title: 'Erro', description: 'Não foi possível gerar a chave PIX.', variant: 'destructive' });
+    } finally {
+      setFetchingPix(false);
+    }
+  };
+
+  useEffect(() => {
+    if (paymentData && paymentMethod === 'PIX' && !paymentData.pixCopyPaste && !paymentData.payload) {
+      fetchPix();
+    }
+  }, [paymentData, paymentMethod]);
   if (paymentData) {
     return (
       <div className="min-h-screen bg-background">
@@ -159,14 +189,20 @@ const Checkout = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {paymentMethod === 'PIX' && paymentData.pixQrCode && (
+                {paymentMethod === 'PIX' && (
                   <div className="space-y-6">
                     <div className="text-center">
-                      <img 
-                        src={`data:image/png;base64,${paymentData.pixQrCode}`} 
-                        alt="QR Code PIX" 
-                        className="mx-auto border-4 border-border rounded-lg w-64 h-64"
-                      />
+                      {paymentData.pixQrCode ? (
+                        <img 
+                          src={`data:image/png;base64,${paymentData.pixQrCode}`} 
+                          alt="QR Code PIX" 
+                          className="mx-auto border-4 border-border rounded-lg w-64 h-64"
+                        />
+                      ) : (
+                        <div className="mx-auto w-64 h-64 flex items-center justify-center border-2 border-dashed rounded-lg text-muted-foreground">
+                          QR Code indisponível
+                        </div>
+                      )}
                       <p className="text-sm text-muted-foreground mt-4">
                         Escaneie o QR Code com o app do seu banco
                       </p>
@@ -186,16 +222,24 @@ const Checkout = () => {
                         </div>
                       </div>
 
-                      <Button
-                        type="button"
-                        size="lg"
-                        className="w-full h-14 gradient-primary font-semibold"
-                        onClick={() => copyToClipboard(paymentData.pixCopyPaste || paymentData.payload, 'Código PIX')}
-                        disabled={!paymentData.pixCopyPaste && !paymentData.payload}
-                      >
-                        <Copy className="w-5 h-5 mr-2" />
-                        Copiar Código PIX
-                      </Button>
+                      <div className="flex gap-3">
+                        <Button
+                          type="button"
+                          size="lg"
+                          className="flex-1 h-14 gradient-primary font-semibold"
+                          onClick={() => copyToClipboard(paymentData.pixCopyPaste || paymentData.payload, 'Código PIX')}
+                          disabled={!paymentData.pixCopyPaste && !paymentData.payload}
+                        >
+                          <Copy className="w-5 h-5 mr-2" />
+                          Copiar Código PIX
+                        </Button>
+                        {!paymentData.pixCopyPaste && !paymentData.payload && (
+                          <Button type="button" variant="outline" size="lg" className="h-14" onClick={fetchPix} disabled={fetchingPix}>
+                            <RefreshCcw className="w-5 h-5 mr-2" />
+                            {fetchingPix ? 'Gerando...' : 'Gerar chave'}
+                          </Button>
+                        )}
+                      </div>
 
                       <p className="text-xs text-center text-muted-foreground mt-3">
                         Cole este código no aplicativo do seu banco para realizar o pagamento

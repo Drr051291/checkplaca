@@ -136,6 +136,34 @@ serve(async (req) => {
 
     console.log('[create-payment] Cobrança criada com sucesso:', paymentData.id);
 
+    // Para PIX, buscar o QR Code e o payload explicitamente
+    let pixQrCode: string | null = null;
+    let pixCopyPaste: string | null = null;
+
+    if (paymentMethod === 'PIX') {
+      try {
+        const pixResponse = await fetch(
+          `https://api.asaas.com/v3/payments/${paymentData.id}/pixQrCode`,
+          {
+            method: 'GET',
+            headers: {
+              'access_token': asaasApiKey,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        const pixData = await pixResponse.json();
+        if (pixResponse.ok) {
+          pixQrCode = pixData?.encodedImage || null;
+          pixCopyPaste = pixData?.payload || null;
+        } else {
+          console.warn('[create-payment] Falha ao obter PIX QR Code:', pixData);
+        }
+      } catch (e) {
+        console.warn('[create-payment] Exceção ao obter PIX QR Code:', e);
+      }
+    }
+
     // Salva o pagamento no banco
     const { error: dbError } = await supabase
       .from('payments')
@@ -161,10 +189,9 @@ serve(async (req) => {
         success: true,
         paymentId: paymentData.id,
         invoiceUrl: paymentData.invoiceUrl,
-        bankSlipUrl: paymentData.bankSlipUrl,
-        pixQrCode: paymentData.encodedImage,
-        pixCopyPaste: paymentData.payload,
-        payload: paymentData.payload, // Alternativa para compatibilidade
+        pixQrCode: pixQrCode,
+        pixCopyPaste: pixCopyPaste,
+        payload: pixCopyPaste, // compatibilidade
         status: paymentData.status,
       }),
       {

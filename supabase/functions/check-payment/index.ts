@@ -43,6 +43,26 @@ serve(async (req) => {
       throw new Error('Erro ao consultar pagamento');
     }
 
+    // Tenta obter o QR Code e payload do PIX
+    let pixQrCode: string | null = null;
+    let payload: string | null = null;
+    try {
+      const pixResp = await fetch(`https://api.asaas.com/v3/payments/${paymentId}/pixQrCode`, {
+        method: 'GET',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json',
+        },
+      });
+      const pixData = await pixResp.json();
+      if (pixResp.ok) {
+        pixQrCode = pixData?.encodedImage || null;
+        payload = pixData?.payload || null;
+      }
+    } catch (e) {
+      console.warn('[check-payment] Não foi possível obter PIX:', e);
+    }
+
     // Atualiza status no banco
     const { error: updateError } = await supabase
       .from('payments')
@@ -61,6 +81,8 @@ serve(async (req) => {
         success: true,
         status: paymentData.status,
         isPaid: paymentData.status === 'CONFIRMED' || paymentData.status === 'RECEIVED',
+        pixQrCode,
+        payload,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
