@@ -24,7 +24,7 @@ export const IncludedSection = () => {
             <p className="text-muted-foreground text-lg mb-2">
               Relatório completo por apenas
             </p>
-            <p className="text-5xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+            <p className="text-5xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
               R$ 19,90
             </p>
           </div>

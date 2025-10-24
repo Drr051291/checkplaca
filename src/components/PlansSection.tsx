@@ -95,7 +95,7 @@ export const PlansSection = () => {
                   <p className="text-sm text-muted-foreground mb-2">{plan.headline}</p>
                 )}
                 <div className="mb-2">
-                  <span className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                  <span className="text-4xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
                     {plan.price}
                   </span>
                 </div>
