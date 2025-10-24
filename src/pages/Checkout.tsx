@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Lock, CheckCircle, Copy, QrCode, Barcode, CreditCard } from "lucide-react";
+import { ArrowLeft, Lock, CheckCircle, Copy, QrCode, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ const Checkout = () => {
   const plate = searchParams.get('plate') || '';
   
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'BOLETO' | 'CREDIT_CARD'>('PIX');
+  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
   const [paymentData, setPaymentData] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -181,7 +181,7 @@ const Checkout = () => {
                         <p className="text-xs text-muted-foreground mb-2">Chave PIX:</p>
                         <div className="flex items-center gap-2">
                           <code className="flex-1 text-sm font-mono break-all bg-background p-3 rounded border">
-                            {paymentData.pixCopyPaste}
+                            {paymentData.pixCopyPaste || paymentData.payload || 'Gerando código...'}
                           </code>
                         </div>
                       </div>
@@ -190,7 +190,8 @@ const Checkout = () => {
                         type="button"
                         size="lg"
                         className="w-full h-14 gradient-primary font-semibold"
-                        onClick={() => copyToClipboard(paymentData.pixCopyPaste, 'Código PIX')}
+                        onClick={() => copyToClipboard(paymentData.pixCopyPaste || paymentData.payload, 'Código PIX')}
+                        disabled={!paymentData.pixCopyPaste && !paymentData.payload}
                       >
                         <Copy className="w-5 h-5 mr-2" />
                         Copiar Código PIX
@@ -203,28 +204,27 @@ const Checkout = () => {
                   </div>
                 )}
 
-                {paymentMethod === 'BOLETO' && paymentData.bankSlipUrl && (
+                {paymentMethod === 'CREDIT_CARD' && paymentData.invoiceUrl && (
                   <div className="space-y-4">
                     <div className="text-center mb-4">
-                      <Barcode className="w-16 h-16 mx-auto text-primary mb-2" />
+                      <CreditCard className="w-16 h-16 mx-auto text-primary mb-2" />
                       <p className="text-muted-foreground">
-                        Seu boleto foi gerado com sucesso
+                        Complete o pagamento no link abaixo
                       </p>
                     </div>
 
                     <Button
                       size="lg"
-                      onClick={() => window.open(paymentData.bankSlipUrl, '_blank')}
+                      onClick={() => window.open(paymentData.invoiceUrl, '_blank')}
                       className="w-full h-14 gradient-primary font-semibold"
                     >
-                      <Barcode className="mr-2" />
-                      Visualizar e Imprimir Boleto
+                      <CreditCard className="mr-2" />
+                      Pagar com Cartão de Crédito
                     </Button>
 
-                    <div className="text-sm text-center text-muted-foreground space-y-1">
-                      <p>O boleto também foi enviado para o seu e-mail</p>
-                      <p>Prazo de pagamento: até 3 dias úteis</p>
-                    </div>
+                    <p className="text-sm text-center text-muted-foreground">
+                      Você será redirecionado para a página segura de pagamento
+                    </p>
                   </div>
                 )}
 
@@ -374,17 +374,6 @@ const Checkout = () => {
                               <QrCode className="w-5 h-5" />
                               <span className="font-semibold">PIX</span>
                               <Badge variant="secondary" className="ml-auto">Aprovação imediata</Badge>
-                            </div>
-                          </Label>
-                        </div>
-
-                        <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50">
-                          <RadioGroupItem value="BOLETO" id="boleto" />
-                          <Label htmlFor="boleto" className="flex-1 cursor-pointer">
-                            <div className="flex items-center gap-2">
-                              <Barcode className="w-5 h-5" />
-                              <span className="font-semibold">Boleto</span>
-                              <span className="text-sm text-muted-foreground ml-auto">Até 3 dias úteis</span>
                             </div>
                           </Label>
                         </div>

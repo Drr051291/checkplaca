@@ -13,7 +13,7 @@ interface PaymentRequest {
   customerEmail: string;
   customerPhone: string;
   customerCpf: string;
-  paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD';
+  paymentMethod: 'PIX' | 'CREDIT_CARD';
 }
 
 serve(async (req) => {
@@ -164,6 +164,7 @@ serve(async (req) => {
         bankSlipUrl: paymentData.bankSlipUrl,
         pixQrCode: paymentData.encodedImage,
         pixCopyPaste: paymentData.payload,
+        payload: paymentData.payload, // Alternativa para compatibilidade
         status: paymentData.status,
       }),
       {
