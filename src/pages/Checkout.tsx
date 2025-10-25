@@ -183,33 +183,12 @@ const Checkout = () => {
           trackPixGenerated(currentPlan.price, data.paymentId);
         }
 
-        // Se for cartão e já foi aprovado, redirecionar
-        if (paymentMethod === 'CREDIT_CARD' && data.status === 'CONFIRMED') {
-          const product = createProductData(planType, plate);
-          trackPurchase({
-            transaction_id: reportId,
-            value: currentPlan.price,
-            currency: 'BRL',
-            items: [product],
-            payment_method: paymentMethod,
-          });
-
-          toast({
-            title: "🎉 Pagamento aprovado!",
-            description: "Redirecionando para o relatório completo...",
-          });
-
-          setTimeout(() => {
-            navigate(`/report?id=${reportId}`);
-          }, 2000);
-        } else {
-          toast({
-            title: "Pagamento gerado!",
-            description: paymentMethod === 'CREDIT_CARD' 
-              ? "Processando pagamento com cartão..." 
-              : "Complete o pagamento para liberar seu relatório.",
-          });
-        }
+        toast({
+          title: "Pagamento gerado!",
+          description: paymentMethod === 'CREDIT_CARD' 
+            ? "Processando pagamento com cartão..." 
+            : "Complete o pagamento para liberar seu relatório.",
+        });
       } else {
         throw new Error(data.error || 'Erro ao processar pagamento');
       }
@@ -263,9 +242,9 @@ const Checkout = () => {
     }
   }, [paymentData, paymentMethod]);
 
-  // Check payment status every 5 seconds if PIX payment is pending
+  // Check payment status every 5 seconds for both PIX and CREDIT_CARD
   useEffect(() => {
-    if (!paymentData?.paymentId || paymentMethod !== 'PIX' || checkingPayment) {
+    if (!paymentData?.paymentId || checkingPayment) {
       return;
     }
 
@@ -287,9 +266,8 @@ const Checkout = () => {
           setCheckingPayment(true);
           
           // Track purchase event for GA4 and Meta Pixel
-          const planType = paymentData.planType === 'premium' ? 'premium' : 'completo';
-          const value = paymentData.planType === 'premium' ? 39.90 : 19.90;
-          const product = createProductData(planType, reportId);
+          const value = currentPlan.price;
+          const product = createProductData(planType, plate);
           
           // Send Purchase event to GA4
           trackPurchase({
@@ -297,7 +275,7 @@ const Checkout = () => {
             value: value,
             currency: 'BRL',
             items: [product],
-            payment_method: paymentData.paymentMethod,
+            payment_method: paymentMethod,
           });
           
           // Send Purchase event to Meta Pixel
@@ -305,7 +283,7 @@ const Checkout = () => {
             window.fbq('track', 'Purchase', {
               value: value,
               currency: 'BRL',
-              content_name: `Relatório Veicular ${planType}`,
+              content_name: currentPlan.name,
               content_type: 'product',
               content_ids: [reportId],
             });
@@ -334,7 +312,7 @@ const Checkout = () => {
     const interval = setInterval(checkPaymentStatus, 5000);
 
     return () => clearInterval(interval);
-  }, [paymentData, paymentMethod, reportId, navigate, checkingPayment]);
+  }, [paymentData, reportId, navigate, checkingPayment, paymentMethod, planType, currentPlan, plate]);
   if (paymentData) {
     return (
       <div className="min-h-screen bg-background">
@@ -343,7 +321,7 @@ const Checkout = () => {
             <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
               Checkplaca
             </h1>
-            {checkingPayment && paymentMethod === 'PIX' && (
+            {checkingPayment && (
               <div className="mt-2 flex items-center gap-2 text-sm text-accent">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Verificando pagamento automaticamente...</span>
@@ -427,22 +405,21 @@ const Checkout = () => {
                     <div className="text-center mb-4">
                       <CreditCard className="w-16 h-16 mx-auto text-primary mb-2" />
                       <p className="text-lg font-semibold mb-2">
-                        {paymentData.status === 'CONFIRMED' ? 'Pagamento Aprovado!' : 'Processando Pagamento...'}
+                        Processando Pagamento com Cartão
                       </p>
                       <p className="text-muted-foreground">
-                        {paymentData.status === 'CONFIRMED' 
-                          ? 'Seu pagamento foi confirmado com sucesso' 
-                          : 'Aguardando confirmação do pagamento'}
+                        Aguardando confirmação do pagamento
                       </p>
                     </div>
 
-                    {paymentData.status !== 'CONFIRMED' && (
-                      <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                        <p className="text-sm text-center text-yellow-900 dark:text-yellow-100">
-                          ⏱️ Seu pagamento está sendo processado. Isso pode levar alguns instantes.
+                    <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
+                      <div className="flex items-center justify-center gap-3">
+                        <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                        <p className="text-sm text-center font-medium">
+                          Verificando automaticamente... Não feche esta página.
                         </p>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
 
