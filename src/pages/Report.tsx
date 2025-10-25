@@ -50,13 +50,16 @@ const Report = () => {
         setReportData(data.report_data);
 
         // Check if user has paid for this report
-        const { data: paymentData } = await supabase
+        const { data: paymentData, error: paymentError } = await supabase
           .from('payments')
           .select('*')
           .eq('report_id', reportId)
           .eq('status', 'paid')
           .maybeSingle();
 
+        console.log('[Report] Payment data:', paymentData);
+        console.log('[Report] Payment error:', paymentError);
+        
         setHasPaidPlan(!!paymentData);
       } catch (error) {
         console.error('Erro ao carregar relatório:', error);
@@ -79,15 +82,16 @@ const Report = () => {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'payments',
           filter: `report_id=eq.${reportId}`,
         },
         (payload) => {
-          console.log('[Report] Payment updated:', payload);
+          console.log('[Report] Payment change detected:', payload);
           const payment = payload.new as any;
-          if (payment.status === 'paid' && !hasPaidPlan) {
+          if (payment?.status === 'paid') {
+            console.log('[Report] Payment confirmed, unlocking report');
             setHasPaidPlan(true);
             
             // Track purchase event for GA4 and Meta Pixel
