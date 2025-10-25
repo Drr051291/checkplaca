@@ -14,6 +14,19 @@ interface PaymentRequest {
   customerPhone: string;
   customerCpf: string;
   paymentMethod: 'PIX' | 'CREDIT_CARD';
+  creditCard?: {
+    holderName: string;
+    number: string;
+    expiryMonth: string;
+    expiryYear: string;
+    ccv: string;
+  };
+  creditCardHolderInfo?: {
+    name: string;
+    email: string;
+    cpfCnpj: string;
+    phone: string;
+  };
 }
 
 serve(async (req) => {
@@ -39,6 +52,8 @@ serve(async (req) => {
       customerPhone,
       customerCpf,
       paymentMethod,
+      creditCard,
+      creditCardHolderInfo,
     }: PaymentRequest = await req.json();
 
     console.log('[create-payment] Criando pagamento:', { reportId, planType, paymentMethod });
@@ -114,6 +129,12 @@ serve(async (req) => {
       externalReference: reportId,
       postalService: false,
     };
+
+    // Adiciona dados do cartão se for pagamento com cartão
+    if (paymentMethod === 'CREDIT_CARD' && creditCard && creditCardHolderInfo) {
+      paymentPayload.creditCard = creditCard;
+      paymentPayload.creditCardHolderInfo = creditCardHolderInfo;
+    }
 
     const createPaymentResponse = await fetch(
       'https://api.asaas.com/v3/payments',

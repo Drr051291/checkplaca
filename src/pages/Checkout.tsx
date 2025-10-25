@@ -31,6 +31,10 @@ const Checkout = () => {
     email: '',
     phone: '',
     cpf: '',
+    cardNumber: '',
+    cardName: '',
+    cardExpiry: '',
+    cardCvv: '',
   });
 
   const planDetails = {
@@ -88,6 +92,22 @@ const Checkout = () => {
       .replace(/(-\d{4})\d+?$/, '$1');
   };
 
+  const formatCardNumber = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{4})(\d)/, '$1 $2')
+      .replace(/(\d{4})(\d)/, '$1 $2')
+      .replace(/(\d{4})(\d)/, '$1 $2')
+      .replace(/(\d{4})\d+?$/, '$1');
+  };
+
+  const formatCardExpiry = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{2})(\d)/, '$1/$2')
+      .replace(/(\/\d{2})\d+?$/, '$1');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -100,6 +120,17 @@ const Checkout = () => {
       return;
     }
 
+    if (paymentMethod === 'CREDIT_CARD') {
+      if (!formData.cardNumber || !formData.cardName || !formData.cardExpiry || !formData.cardCvv) {
+        toast({
+          title: "Dados do cartão incompletos",
+          description: "Por favor, preencha todos os dados do cartão.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsProcessing(true);
 
     // Track lead (form submission)
@@ -110,16 +141,36 @@ const Checkout = () => {
     trackAddPaymentInfo(product, paymentMethod);
     
     try {
+      const requestBody: any = {
+        reportId,
+        planType,
+        customerName: formData.name,
+        customerEmail: formData.email,
+        customerPhone: formData.phone.replace(/\D/g, ''),
+        customerCpf: formData.cpf.replace(/\D/g, ''),
+        paymentMethod,
+      };
+
+      // Adiciona dados do cartão se for pagamento com cartão
+      if (paymentMethod === 'CREDIT_CARD') {
+        const [expiryMonth, expiryYear] = formData.cardExpiry.split('/');
+        requestBody.creditCard = {
+          holderName: formData.cardName,
+          number: formData.cardNumber.replace(/\s/g, ''),
+          expiryMonth,
+          expiryYear: `20${expiryYear}`,
+          ccv: formData.cardCvv,
+        };
+        requestBody.creditCardHolderInfo = {
+          name: formData.name,
+          email: formData.email,
+          cpfCnpj: formData.cpf.replace(/\D/g, ''),
+          phone: formData.phone.replace(/\D/g, ''),
+        };
+      }
+
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          reportId,
-          planType,
-          customerName: formData.name,
-          customerEmail: formData.email,
-          customerPhone: formData.phone.replace(/\D/g, ''),
-          customerCpf: formData.cpf.replace(/\D/g, ''),
-          paymentMethod,
-        },
+        body: requestBody,
       });
 
       if (error) throw error;
@@ -131,11 +182,34 @@ const Checkout = () => {
         if (paymentMethod === 'PIX') {
           trackPixGenerated(currentPlan.price, data.paymentId);
         }
-        
-        toast({
-          title: "Pagamento gerado!",
-          description: "Complete o pagamento para liberar seu relatório.",
-        });
+
+        // Se for cartão e já foi aprovado, redirecionar
+        if (paymentMethod === 'CREDIT_CARD' && data.status === 'CONFIRMED') {
+          const product = createProductData(planType, plate);
+          trackPurchase({
+            transaction_id: reportId,
+            value: currentPlan.price,
+            currency: 'BRL',
+            items: [product],
+            payment_method: paymentMethod,
+          });
+
+          toast({
+            title: "🎉 Pagamento aprovado!",
+            description: "Redirecionando para o relatório completo...",
+          });
+
+          setTimeout(() => {
+            navigate(`/report?id=${reportId}`);
+          }, 2000);
+        } else {
+          toast({
+            title: "Pagamento gerado!",
+            description: paymentMethod === 'CREDIT_CARD' 
+              ? "Processando pagamento com cartão..." 
+              : "Complete o pagamento para liberar seu relatório.",
+          });
+        }
       } else {
         throw new Error(data.error || 'Erro ao processar pagamento');
       }
@@ -348,27 +422,27 @@ const Checkout = () => {
                   </div>
                 )}
 
-                {paymentMethod === 'CREDIT_CARD' && paymentData.invoiceUrl && (
+                {paymentMethod === 'CREDIT_CARD' && (
                   <div className="space-y-4">
                     <div className="text-center mb-4">
                       <CreditCard className="w-16 h-16 mx-auto text-primary mb-2" />
+                      <p className="text-lg font-semibold mb-2">
+                        {paymentData.status === 'CONFIRMED' ? 'Pagamento Aprovado!' : 'Processando Pagamento...'}
+                      </p>
                       <p className="text-muted-foreground">
-                        Complete o pagamento no link abaixo
+                        {paymentData.status === 'CONFIRMED' 
+                          ? 'Seu pagamento foi confirmado com sucesso' 
+                          : 'Aguardando confirmação do pagamento'}
                       </p>
                     </div>
 
-                    <Button
-                      size="lg"
-                      onClick={() => window.open(paymentData.invoiceUrl, '_blank')}
-                      className="w-full h-14 gradient-primary font-semibold"
-                    >
-                      <CreditCard className="mr-2" />
-                      Pagar com Cartão de Crédito
-                    </Button>
-
-                    <p className="text-sm text-center text-muted-foreground">
-                      Você será redirecionado para a página segura de pagamento
-                    </p>
+                    {paymentData.status !== 'CONFIRMED' && (
+                      <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                        <p className="text-sm text-center text-yellow-900 dark:text-yellow-100">
+                          ⏱️ Seu pagamento está sendo processado. Isso pode levar alguns instantes.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -539,14 +613,64 @@ const Checkout = () => {
                         </TabsContent>
 
                         <TabsContent value="CREDIT_CARD" className="mt-4">
-                          <div className="bg-secondary/20 rounded-lg p-4 space-y-2">
-                            <div className="flex items-start gap-3">
-                              <CreditCard className="w-5 h-5 text-primary mt-0.5" />
+                          <div className="space-y-4">
+                            <div className="bg-secondary/20 rounded-lg p-4 mb-4">
+                              <div className="flex items-start gap-3">
+                                <CreditCard className="w-5 h-5 text-primary mt-0.5" />
+                                <div>
+                                  <p className="font-semibold">Cartão de Crédito</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Pagamento seguro e processado diretamente no site.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <Label htmlFor="cardNumber">Número do Cartão</Label>
+                              <Input
+                                id="cardNumber"
+                                type="text"
+                                value={formData.cardNumber}
+                                onChange={(e) => handleInputChange('cardNumber', formatCardNumber(e.target.value))}
+                                placeholder="0000 0000 0000 0000"
+                                maxLength={19}
+                              />
+                            </div>
+
+                            <div>
+                              <Label htmlFor="cardName">Nome no Cartão</Label>
+                              <Input
+                                id="cardName"
+                                type="text"
+                                value={formData.cardName}
+                                onChange={(e) => handleInputChange('cardName', e.target.value.toUpperCase())}
+                                placeholder="NOME COMO NO CARTÃO"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <p className="font-semibold">Cartão de Crédito</p>
-                                <p className="text-sm text-muted-foreground">
-                                  Pagamento seguro. Você será redirecionado para completar a compra.
-                                </p>
+                                <Label htmlFor="cardExpiry">Validade</Label>
+                                <Input
+                                  id="cardExpiry"
+                                  type="text"
+                                  value={formData.cardExpiry}
+                                  onChange={(e) => handleInputChange('cardExpiry', formatCardExpiry(e.target.value))}
+                                  placeholder="MM/AA"
+                                  maxLength={5}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="cardCvv">CVV</Label>
+                                <Input
+                                  id="cardCvv"
+                                  type="text"
+                                  value={formData.cardCvv}
+                                  onChange={(e) => handleInputChange('cardCvv', e.target.value.replace(/\D/g, ''))}
+                                  placeholder="000"
+                                  maxLength={4}
+                                />
                               </div>
                             </div>
                           </div>
