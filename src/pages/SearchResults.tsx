@@ -37,7 +37,7 @@ const SearchResults = () => {
             Voltar
           </Button>
           <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-            Consulta Placa
+            Checkplaca
           </h1>
         </div>
       </header>

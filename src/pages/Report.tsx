@@ -153,7 +153,7 @@ const Report = () => {
     if (!reportRef.current) return;
     
     const vehicleName = vehicleInfo?.marca_modelo || rawData?.dados_veiculo?.modelo || 'Veículo';
-    const message = `🚗 *Relatório de Veículo - Consulta Placa*\n\n` +
+    const message = `🚗 *Relatório de Veículo - Checkplaca*\n\n` +
       `📋 Placa: *${plate}*\n` +
       `🚘 ${vehicleName}\n` +
       `📅 Ano: ${vehicleInfo?.ano_fabricacao}/${vehicleInfo?.ano_modelo}\n\n` +
@@ -208,7 +208,7 @@ const Report = () => {
                 Nova Consulta
               </Button>
               <h1 className="text-2xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-                Consulta Placa
+                Checkplaca
               </h1>
             </div>
             <div className="flex flex-wrap gap-3">
