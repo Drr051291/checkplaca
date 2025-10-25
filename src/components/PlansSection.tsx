@@ -64,58 +64,58 @@ export const PlansSection = () => {
   ];
 
   return (
-    <section id="planos" className="py-20 bg-secondary/30">
+    <section id="planos" className="py-12 sm:py-16 md:py-20 bg-secondary/30">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 px-4">
             Escolha o plano ideal para sua necessidade
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-4">
             Informações verificadas direto das bases oficiais do DETRAN
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <Card 
               key={index} 
               className={`relative shadow-soft hover:shadow-strong transition-smooth ${
-                plan.popular ? 'border-2 border-primary scale-105 shadow-strong' : ''
+                plan.popular ? 'border-2 border-primary sm:scale-105 shadow-strong' : ''
               }`}
             >
               {plan.popular && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1">
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 sm:px-4 py-1 text-xs sm:text-sm">
                   <Star className="w-3 h-3 mr-1 fill-current" />
                   {plan.headline}
                 </Badge>
               )}
               
-              <CardHeader className="text-center pt-8 pb-4">
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+              <CardHeader className="text-center pt-6 sm:pt-8 pb-3 sm:pb-4">
+                <h3 className="text-xl sm:text-2xl font-bold mb-2">{plan.name}</h3>
                 {!plan.popular && (
-                  <p className="text-sm text-muted-foreground mb-2">{plan.headline}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-2">{plan.headline}</p>
                 )}
                 <div className="mb-2">
-                  <span className="text-4xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
+                  <span className="text-3xl sm:text-4xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
                     {plan.price}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">{plan.description}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{plan.description}</p>
               </CardHeader>
 
-              <CardContent className="space-y-6">
-                <ul className="space-y-3">
+              <CardContent className="space-y-4 sm:space-y-6">
+                <ul className="space-y-2 sm:space-y-3">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
+                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-accent flex-shrink-0 mt-0.5" />
+                      <span className="text-xs sm:text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
 
                 <Button 
                   variant={plan.popular ? "default" : "outline"}
-                  className={`w-full h-12 font-semibold ${
+                  className={`w-full h-11 sm:h-12 font-semibold text-sm sm:text-base ${
                     plan.popular ? 'gradient-primary hover:opacity-90' : ''
                   }`}
                   onClick={() => {

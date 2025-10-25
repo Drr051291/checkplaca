@@ -12,15 +12,15 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-soft">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
               Checkplaca
             </h1>
-            <nav className="hidden md:flex items-center gap-6">
+            <nav className="flex items-center gap-3 sm:gap-6">
               <a 
                 href="#inicio" 
-                className="text-sm font-medium hover:text-primary transition-smooth"
+                className="hidden sm:inline text-sm font-medium hover:text-primary transition-smooth"
                 onClick={(e) => {
                   e.preventDefault();
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -30,7 +30,7 @@ const Index = () => {
               </a>
               <a 
                 href="#exemplo-relatorio" 
-                className="text-sm font-medium hover:text-primary transition-smooth"
+                className="hidden md:inline text-sm font-medium hover:text-primary transition-smooth"
                 onClick={(e) => {
                   e.preventDefault();
                   document.getElementById('exemplo-relatorio')?.scrollIntoView({ behavior: 'smooth' });
@@ -40,7 +40,7 @@ const Index = () => {
               </a>
               <a 
                 href="#planos" 
-                className="text-sm font-medium hover:text-primary transition-smooth"
+                className="hidden sm:inline text-sm font-medium hover:text-primary transition-smooth"
                 onClick={(e) => {
                   e.preventDefault();
                   document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' });
@@ -51,7 +51,7 @@ const Index = () => {
               <Button 
                 variant="ghost" 
                 onClick={() => navigate('/auth')}
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium h-8 sm:h-10 px-3 sm:px-4"
               >
                 Entrar
               </Button>
@@ -75,32 +75,32 @@ const Index = () => {
       <PlansSection />
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-hero text-primary-foreground">
+      <section className="py-12 sm:py-16 md:py-20 bg-gradient-hero text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
-          <h3 className="text-3xl md:text-4xl font-bold mb-6">
+          <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
             Faça sua consulta agora mesmo
           </h3>
-          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 opacity-90 max-w-2xl mx-auto px-4">
             Descubra o histórico completo do veículo em segundos. Comece com uma consulta básica gratuita.
           </p>
           <Button 
             size="lg"
             variant="secondary"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="h-14 px-10 text-lg font-semibold shadow-strong hover:scale-105 transition-smooth"
+            className="h-12 sm:h-14 px-6 sm:px-10 text-base sm:text-lg font-semibold shadow-strong hover:scale-105 transition-smooth"
           >
             Consultar placa gratuitamente
           </Button>
-          <p className="text-sm mt-4 opacity-75">
+          <p className="text-xs sm:text-sm mt-3 sm:mt-4 opacity-75">
             ✓ Sem cadastro ✓ Resultado imediato ✓ Dados oficiais do DETRAN
           </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12 bg-background">
+      <footer className="border-t border-border py-8 sm:py-12 bg-background">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
             <div>
               <h4 className="font-bold mb-4 bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
                 Checkplaca

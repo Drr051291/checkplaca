@@ -35,38 +35,38 @@ export const ReportExampleSection = () => {
   };
 
   return (
-    <section className="py-20 bg-background">
+    <section className="py-12 sm:py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <Badge className="bg-accent/10 text-accent border-accent/20 px-4 py-1.5 mb-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <Badge className="bg-accent/10 text-accent border-accent/20 px-3 sm:px-4 py-1.5 mb-4 text-xs sm:text-sm">
             Demonstração de Relatório
           </Badge>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 px-4">
             Veja o que você recebe em cada consulta
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-4">
             Exemplo real de relatório completo (dados anonimizados para demonstração)
           </p>
         </div>
 
         <div className="max-w-5xl mx-auto">
           <Tabs defaultValue="resumo" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-8">
-              <TabsTrigger value="resumo">
-                <FileText className="w-4 h-4 mr-2" />
-                Resumo
+            <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8 gap-1 h-auto p-1">
+              <TabsTrigger value="resumo" className="text-xs sm:text-sm py-2 sm:py-2.5">
+                <FileText className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Resumo</span>
               </TabsTrigger>
-              <TabsTrigger value="debitos">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Débitos
+              <TabsTrigger value="debitos" className="text-xs sm:text-sm py-2 sm:py-2.5">
+                <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Débitos</span>
               </TabsTrigger>
-              <TabsTrigger value="sinistros">
-                <Car className="w-4 h-4 mr-2" />
-                Sinistros
+              <TabsTrigger value="sinistros" className="text-xs sm:text-sm py-2 sm:py-2.5">
+                <Car className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sinistros</span>
               </TabsTrigger>
-              <TabsTrigger value="especificacoes">
-                <Wrench className="w-4 h-4 mr-2" />
-                Especificações
+              <TabsTrigger value="especificacoes" className="text-xs sm:text-sm py-2 sm:py-2.5">
+                <Wrench className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Especif.</span>
               </TabsTrigger>
             </TabsList>
 
@@ -173,14 +173,14 @@ export const ReportExampleSection = () => {
             </TabsContent>
           </Tabs>
 
-          <div className="text-center mt-8">
+          <div className="text-center mt-6 sm:mt-8 px-4">
             <Button 
               size="lg" 
               variant="outline"
-              className="h-12 px-8"
+              className="h-11 sm:h-12 px-6 sm:px-8 text-sm sm:text-base w-full sm:w-auto"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
-              <FileText className="w-5 h-5 mr-2" />
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Fazer minha consulta agora
             </Button>
           </div>
