@@ -49,18 +49,23 @@ const Report = () => {
 
         setReportData(data.report_data);
 
-        // Check if user has paid for this report
-        const { data: paymentData, error: paymentError } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('report_id', reportId)
-          .eq('status', 'paid')
-          .maybeSingle();
-
-        console.log('[Report] Payment data:', paymentData);
-        console.log('[Report] Payment error:', paymentError);
-        
-        setHasPaidPlan(!!paymentData);
+        // Verifica acesso via função de backend (ignora RLS)
+        const { data: accessResult, error: accessError } = await supabase.functions.invoke('report-access', {
+          body: { reportId }
+        });
+        if (accessError) console.error('[Report] report-access error:', accessError);
+        if (accessResult?.hasAccess) {
+          setHasPaidPlan(true);
+        } else {
+          // Fallback: tentativa via consulta direta (quando RLS permitir)
+          const { data: paymentData } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('report_id', reportId)
+            .eq('status', 'paid')
+            .maybeSingle();
+          setHasPaidPlan(!!paymentData);
+        }
       } catch (error) {
         console.error('Erro ao carregar relatório:', error);
         toast({
