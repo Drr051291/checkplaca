@@ -1,17 +1,40 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Search, DollarSign, FileText, TrendingUp, Calendar } from "lucide-react";
+import { LogOut, Search, DollarSign, FileText, TrendingUp, CreditCard, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
 
+interface DashboardStats {
+  totalSearches: number;
+  totalRevenue: number;
+  paidReports: number;
+  paymentMethods: { pix: number; boleto: number; card: number };
+}
+
+interface RecentSearch {
+  id: string;
+  plate: string;
+  created_at: string;
+  payment_status: string | null;
+  payment_method: string | null;
+  amount: number | null;
+}
+
 const AdminDashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalSearches: 0,
+    totalRevenue: 0,
+    paidReports: 0,
+    paymentMethods: { pix: 0, boleto: 0, card: 0 }
+  });
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -67,6 +90,93 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch all vehicle reports
+        const { data: reports, error: reportsError } = await supabase
+          .from('vehicle_reports')
+          .select('id, plate, created_at');
+
+        if (reportsError) throw reportsError;
+
+        // Fetch all payments with status 'paid' or 'confirmed'
+        const { data: payments, error: paymentsError } = await supabase
+          .from('payments')
+          .select('*')
+          .in('status', ['paid', 'confirmed']);
+
+        if (paymentsError) throw paymentsError;
+
+        // Calculate stats
+        const totalSearches = reports?.length || 0;
+        const paidReports = payments?.length || 0;
+        const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
+
+        // Count payment methods
+        const paymentMethods = payments?.reduce((acc, p) => {
+          const method = p.payment_method?.toLowerCase() || 'pix';
+          if (method === 'pix') acc.pix++;
+          else if (method === 'boleto') acc.boleto++;
+          else if (method === 'credit_card' || method === 'card') acc.card++;
+          return acc;
+        }, { pix: 0, boleto: 0, card: 0 }) || { pix: 0, boleto: 0, card: 0 };
+
+        setStats({
+          totalSearches,
+          totalRevenue,
+          paidReports,
+          paymentMethods
+        });
+
+        // Fetch recent searches with payment info
+        const { data: recentData, error: recentError } = await supabase
+          .from('vehicle_reports')
+          .select(`
+            id,
+            plate,
+            created_at
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (recentError) throw recentError;
+
+        // Get payment info for each report
+        const recentWithPayments = await Promise.all(
+          (recentData || []).map(async (report) => {
+            const { data: payment } = await supabase
+              .from('payments')
+              .select('status, payment_method, amount')
+              .eq('report_id', report.id)
+              .in('status', ['paid', 'confirmed'])
+              .single();
+
+            return {
+              ...report,
+              payment_status: payment?.status || null,
+              payment_method: payment?.payment_method || null,
+              amount: payment?.amount || null
+            };
+          })
+        );
+
+        setRecentSearches(recentWithPayments);
+      } catch (error) {
+        console.error('[AdminDashboard] Erro ao buscar dados:', error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os dados do dashboard.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchDashboardData();
+  }, [isAdmin, toast]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
@@ -84,22 +194,23 @@ const AdminDashboard = () => {
     );
   }
 
-  // Mock statistics data
-  const stats = {
-    totalSearches: 1247,
-    totalRevenue: 12293.30,
-    freeSearches: 892,
-    paidReports: 355,
-    conversionRate: 28.5
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    });
   };
 
-  const recentSearches = [
-    { id: 1, plate: "ABC1234", date: "2025-01-18 14:32", type: "Pago", value: "R$ 9,90" },
-    { id: 2, plate: "XYZ5678", date: "2025-01-18 14:15", type: "Gratuito", value: "-" },
-    { id: 3, plate: "DEF9012", date: "2025-01-18 13:58", type: "Pago", value: "R$ 9,90" },
-    { id: 4, plate: "GHI3456", date: "2025-01-18 13:42", type: "Gratuito", value: "-" },
-    { id: 5, plate: "JKL7890", date: "2025-01-18 13:21", type: "Pago", value: "R$ 9,90" }
-  ];
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,7 +245,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card className="shadow-soft hover:shadow-strong transition-smooth">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -145,8 +256,22 @@ const AdminDashboard = () => {
             <CardContent>
               <div className="text-3xl font-bold">{stats.totalSearches.toLocaleString('pt-BR')}</div>
               <p className="text-xs text-muted-foreground mt-2">
-                <TrendingUp className="w-3 h-3 inline mr-1" />
-                +12% vs. mês anterior
+                Todas as consultas realizadas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft hover:shadow-strong transition-smooth">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Compras
+              </CardTitle>
+              <FileText className="w-5 h-5 text-accent" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.paidReports}</div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Relatórios pagos
               </p>
             </CardContent>
           </Card>
@@ -156,15 +281,14 @@ const AdminDashboard = () => {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Receita Total
               </CardTitle>
-              <DollarSign className="w-5 h-5 text-accent" />
+              <DollarSign className="w-5 h-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-accent">
-                R$ {stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <div className="text-3xl font-bold text-primary">
+                {formatCurrency(stats.totalRevenue)}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                <TrendingUp className="w-3 h-3 inline mr-1" />
-                +18% vs. mês anterior
+                Pagamentos confirmados
               </p>
             </CardContent>
           </Card>
@@ -172,15 +296,25 @@ const AdminDashboard = () => {
           <Card className="shadow-soft hover:shadow-strong transition-smooth">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Relatórios Pagos
+                Meio de Pagamento
               </CardTitle>
-              <FileText className="w-5 h-5 text-primary" />
+              <CreditCard className="w-5 h-5 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.paidReports}</div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {stats.freeSearches} consultas gratuitas
-              </p>
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">PIX:</span>
+                  <span className="font-semibold">{stats.paymentMethods.pix}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Boleto:</span>
+                  <span className="font-semibold">{stats.paymentMethods.boleto}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cartão:</span>
+                  <span className="font-semibold">{stats.paymentMethods.card}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -189,10 +323,14 @@ const AdminDashboard = () => {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Taxa de Conversão
               </CardTitle>
-              <TrendingUp className="w-5 h-5 text-accent" />
+              <TrendingUp className="w-5 h-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.conversionRate}%</div>
+              <div className="text-3xl font-bold">
+                {stats.totalSearches > 0 
+                  ? ((stats.paidReports / stats.totalSearches) * 100).toFixed(1)
+                  : '0'}%
+              </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Gratuito → Pago
               </p>
@@ -207,13 +345,9 @@ const AdminDashboard = () => {
               <div>
                 <CardTitle className="text-xl">Consultas Recentes</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Últimas consultas realizadas na plataforma
+                  Últimas {recentSearches.length} consultas realizadas na plataforma
                 </p>
               </div>
-              <Button variant="outline">
-                <Calendar className="mr-2 w-4 h-4" />
-                Exportar CSV
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -236,36 +370,39 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentSearches.map((search) => (
-                    <tr key={search.id} className="border-b border-border hover:bg-secondary/50 transition-smooth">
-                      <td className="py-4 px-4">
-                        <span className="font-mono font-bold tracking-wider">{search.plate}</span>
-                      </td>
-                      <td className="py-4 px-4 text-sm text-muted-foreground">
-                        {search.date}
-                      </td>
-                      <td className="py-4 px-4">
-                        <Badge 
-                          className={search.type === "Pago" 
-                            ? "bg-accent text-accent-foreground" 
-                            : "bg-secondary text-secondary-foreground"
-                          }
-                        >
-                          {search.type}
-                        </Badge>
-                      </td>
-                      <td className="py-4 px-4 text-right font-semibold">
-                        {search.value}
+                  {recentSearches.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                        Nenhuma consulta encontrada
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    recentSearches.map((search) => (
+                      <tr key={search.id} className="border-b border-border hover:bg-secondary/50 transition-smooth">
+                        <td className="py-4 px-4">
+                          <span className="font-mono font-bold tracking-wider">{search.plate}</span>
+                        </td>
+                        <td className="py-4 px-4 text-sm text-muted-foreground">
+                          {formatDate(search.created_at)}
+                        </td>
+                        <td className="py-4 px-4">
+                          <Badge 
+                            className={search.payment_status 
+                              ? "bg-accent text-accent-foreground" 
+                              : "bg-secondary text-secondary-foreground"
+                            }
+                          >
+                            {search.payment_status ? "Pago" : "Gratuito"}
+                          </Badge>
+                        </td>
+                        <td className="py-4 px-4 text-right font-semibold">
+                          {search.amount ? formatCurrency(Number(search.amount)) : "-"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
-            </div>
-            <div className="mt-6 flex justify-center">
-              <Button variant="outline">
-                Carregar mais
-              </Button>
             </div>
           </CardContent>
         </Card>
