@@ -78,36 +78,52 @@ serve(async (req) => {
 
     // Extrair dados do veículo conforme estrutura da documentação
     const dados = consultaData.dados || {};
-    const infoVeiculo = dados.informacoes_veiculo || {};
+    
+    // A API pode retornar dados como array ou objeto
+    const dadosArray = Array.isArray(dados) ? dados : [dados];
+    
+    // Extrair informações do veículo
+    const infoVeiculoObj = dadosArray.find(d => d.informacoes_veiculo) || {};
+    const infoVeiculo = infoVeiculoObj.informacoes_veiculo || dados.informacoes_veiculo || {};
     const dadosVeiculo = infoVeiculo.dados_veiculo || {};
+    const dadosTecnicos = infoVeiculo.dados_tecnicos || {};
+    const dadosCarga = infoVeiculo.dados_carga || {};
     
-    // Extrair informações de leilão
-    const leilao = dados.leilao || {};
-    const historicoLeiloes = leilao.historico || [];
+    // Extrair informações de leilão e sinistros
+    const leilaoObj = dadosArray.find(d => d.informacoes_sobre_leilao) || {};
+    const leilaoInfo = leilaoObj.informacoes_sobre_leilao || dados.leilao || {};
+    const registroLeiloes = leilaoInfo.registro_leiloes || {};
+    const registroSinistros = leilaoInfo.registro_sinistros_acidentes || {};
+    const registroOferta = leilaoInfo.registro_sobre_oferta || {};
     
-    // Extrair débitos e multas
-    const debitos = dados.debitos || {};
-    const debitosIPVA = debitos.ipva || [];
-    const debitosLicenciamento = debitos.licenciamento || [];
-    const debitosMultas = debitos.multas || [];
-    const debitosDPVAT = debitos.dpvat || [];
+    // Extrair débitos do DETRAN
+    const detranObj = dadosArray.find(d => d.informacoes_do_detran) || {};
+    const detranInfo = detranObj.informacoes_do_detran || dados.debitos || {};
+    const debitosDetran = detranInfo.debitos_detran || {};
+    const restricoesDetran = detranInfo.restricoes_detran || {};
     
-    // Extrair restrições
-    const restricoes = dados.restricoes || {};
-    const restricoesJudiciais = restricoes.judiciais || [];
-    const restricoesAdministrativas = restricoes.administrativas || [];
-    const restricoesRouboFurto = restricoes.roubo_furto || [];
-    const restricoesAlienacao = restricoes.alienacao || [];
+    // Extrair RENAINF
+    const renainf = dadosArray.find(d => d.registro_debitos_por_infracoes_renainf) || {};
+    const renainfInfo = renainf.registro_debitos_por_infracoes_renainf || {};
+    const infracoesRenainf = renainfInfo.infracoes_renainf || {};
     
-    // Extrair recalls
+    // Extrair histórico de roubo e furto
+    const rouboFurtoObj = dadosArray.find(d => d.historico_roubo_furto) || {};
+    const rouboFurtoInfo = rouboFurtoObj.historico_roubo_furto || {};
+    const registrosRouboFurto = rouboFurtoInfo.registros_roubo_furto || {};
+    
+    // Extrair recalls (se existir)
     const recalls = dados.recalls || [];
     
-    // Extrair histórico de proprietários
+    // Extrair histórico de proprietários (se existir)
     const historicoProprietarios = dados.historico_proprietarios || {};
     
-    console.log('Dados de leilão:', JSON.stringify(leilao));
-    console.log('Débitos encontrados:', JSON.stringify(debitos));
-    console.log('Restrições encontradas:', JSON.stringify(restricoes));
+    console.log('Dados de leilão:', JSON.stringify(leilaoInfo));
+    console.log('Dados de sinistros:', JSON.stringify(registroSinistros));
+    console.log('Débitos DETRAN encontrados:', JSON.stringify(debitosDetran));
+    console.log('RENAINF encontrado:', JSON.stringify(infracoesRenainf));
+    console.log('Restrições DETRAN:', JSON.stringify(restricoesDetran));
+    console.log('Roubo e Furto:', JSON.stringify(registrosRouboFurto));
     console.log('Recalls encontrados:', recalls.length);
     
     // Consolidar dados do relatório
@@ -119,32 +135,110 @@ serve(async (req) => {
         ano_modelo: dadosVeiculo.ano_modelo,
         chassi: dadosVeiculo.chassi,
         placa: dadosVeiculo.placa || plate,
-        renavam: dadosVeiculo.renavam,
+        renavam: detranInfo.numero_renavam || dadosVeiculo.renavam,
         cor: dadosVeiculo.cor,
         combustivel: dadosVeiculo.combustivel,
         categoria: dadosVeiculo.tipo_veiculo || dadosVeiculo.categoria,
+        segmento: dadosVeiculo.segmento,
+        procedencia: dadosVeiculo.procedencia,
         municipio: dadosVeiculo.municipio,
         uf: dadosVeiculo.uf_municipio || dadosVeiculo.uf,
       },
+      dadosTecnicos: {
+        tipo_veiculo: dadosTecnicos.tipo_veiculo,
+        sub_segmento: dadosTecnicos.sub_segmento,
+        numero_motor: dadosTecnicos.numero_motor,
+        numero_caixa_cambio: dadosTecnicos.numero_caixa_cambio,
+        potencia: dadosTecnicos.potencia,
+        cilindradas: dadosTecnicos.cilindradas,
+      },
+      dadosCarga: {
+        numero_eixos: dadosCarga.numero_eixos,
+        capacidade_maxima_tracao: dadosCarga.capacidade_maxima_tracao,
+        capacidade_passageiro: dadosCarga.capacidade_passageiro,
+        peso_bruto_total: dadosCarga.peso_bruto_total,
+      },
       leilao: {
-        tem_historico: historicoLeiloes.length > 0,
-        historico: historicoLeiloes,
-        detalhes: leilao,
+        possui_registro: leilaoInfo.possui_registro === 'sim',
+        classificacao: registroOferta.classificacao,
+        dicionario_classificacoes: registroOferta.dicionario_classificacoes,
+        historico: registroLeiloes.registros || [],
+      },
+      sinistros: {
+        possui_registro: registroSinistros.possui_registro === 'sim',
       },
       debitos: {
-        ipva: debitosIPVA,
-        licenciamento: debitosLicenciamento,
-        multas: debitosMultas,
-        dpvat: debitosDPVAT,
-        total_geral: debitos.total_geral || 0,
-        quantidade_total: (debitosIPVA.length || 0) + (debitosLicenciamento.length || 0) + (debitosMultas.length || 0) + (debitosDPVAT.length || 0),
+        ipva: {
+          possui_debito: debitosDetran.debitos_ipva?.possui_debido === 'sim',
+          valor: debitosDetran.debitos_ipva?.debido || 0,
+        },
+        licenciamento: {
+          possui_debito: debitosDetran.debitos_licenciamento?.possui_debido === 'sim',
+          valor: debitosDetran.debitos_licenciamento?.debido || 0,
+        },
+        multas: {
+          possui_debito: debitosDetran.debitos_multa?.possui_debido === 'sim',
+          valor: debitosDetran.debitos_multa?.debido || 0,
+        },
+        dpvat: {
+          possui_debito: debitosDetran.debitos_dpvat?.possui_debido === 'sim',
+          valor: debitosDetran.debitos_dpvat?.debido || 0,
+        },
+        municipais: {
+          possui_debito: debitosDetran.debitos_municipais?.possui_debido === 'sim',
+          valor: debitosDetran.debitos_municipais?.debido || 0,
+        },
       },
       restricoes: {
-        judiciais: restricoesJudiciais,
-        administrativas: restricoesAdministrativas,
-        roubo_furto: restricoesRouboFurto,
-        alienacao: restricoesAlienacao,
-        tem_restricoes: (restricoesJudiciais.length + restricoesAdministrativas.length + restricoesRouboFurto.length + restricoesAlienacao.length) > 0,
+        situacao_veiculo: restricoesDetran.situacao_veiculo,
+        remarcacao_chassi: restricoesDetran.remarcacao_chassi,
+        furto: {
+          possui_restricao: restricoesDetran.restricao_furto?.possui_restricao === 'sim',
+          restricao: restricoesDetran.restricao_furto?.restricao,
+          descricao: restricoesDetran.restricao_furto?.descricao,
+        },
+        guincho: {
+          possui_restricao: restricoesDetran.restricao_guincho?.possui_restricao === 'sim',
+          restricao: restricoesDetran.restricao_guincho?.restricao,
+          descricao: restricoesDetran.restricao_guincho?.descricao,
+        },
+        administrativa: {
+          possui_restricao: restricoesDetran.restricao_administrativa?.possui_restricao === 'sim',
+          restricao: restricoesDetran.restricao_administrativa?.restricao,
+          descricao: restricoesDetran.restricao_administrativa?.descricao,
+        },
+        judicial: {
+          possui_restricao: restricoesDetran.restricao_judicial?.possui_restricao === 'sim',
+          restricao: restricoesDetran.restricao_judicial?.restricao,
+          descricao: restricoesDetran.restricao_judicial?.descricao,
+        },
+        tributaria: {
+          possui_restricao: restricoesDetran.restricao_tributaria?.possui_restricao === 'sim',
+          restricao: restricoesDetran.restricao_tributaria?.restricao,
+          descricao: restricoesDetran.restricao_tributaria?.descricao,
+        },
+        renajud: {
+          possui_restricao: restricoesDetran.restricao_judicial_renajud?.possui_restricao === 'sim',
+          restricao: restricoesDetran.restricao_judicial_renajud?.restricao,
+          descricao: restricoesDetran.restricao_judicial_renajud?.descricao,
+        },
+        outras: {
+          possui_restricao: restricoesDetran.outras_restricoes?.possui_restricao === 'sim',
+          restricoes: restricoesDetran.outras_restricoes?.restricoes || [],
+        },
+        comunicacao_venda: {
+          possui_comunicacao: restricoesDetran.comunicacao_venda?.possui_comunicacao === 'sim',
+          comunicacao: restricoesDetran.comunicacao_venda?.comunicacao,
+          descricao: restricoesDetran.comunicacao_venda?.descricao,
+        },
+      },
+      rouboFurto: {
+        possui_registro: registrosRouboFurto.possui_registro === 'sim',
+        registros: registrosRouboFurto.registros || [],
+      },
+      renainf: {
+        possui_infracoes: infracoesRenainf.possui_infracoes === 'sim',
+        infracoes: infracoesRenainf.infracoes || [],
       },
       recalls: recalls,
       historico_proprietarios: historicoProprietarios,

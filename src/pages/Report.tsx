@@ -265,12 +265,15 @@ const Report = () => {
   const plate = reportData.plate;
   const recalls = reportData.recalls || [];
   const leilao = reportData.leilao || {};
+  const sinistros = reportData.sinistros || {};
   const debitos = reportData.debitos || {};
   const restricoes = reportData.restricoes || {};
+  const rouboFurto = reportData.rouboFurto || {};
+  const renainf = reportData.renainf || {};
   const rawData = reportData.raw?.dados?.informacoes_veiculo || {};
   const dadosLeilao = reportData.raw?.dados?.leilao || {};
-  const dadosTecnicos = rawData.dados_tecnicos || {};
-  const dadosCarga = rawData.dados_carga || {};
+  const dadosTecnicos = reportData.dadosTecnicos || rawData.dados_tecnicos || {};
+  const dadosCarga = reportData.dadosCarga || rawData.dados_carga || {};
 
   return (
     <div className="min-h-screen bg-background">
@@ -544,12 +547,12 @@ const Report = () => {
             </>
           )}
 
-          {/* Conteúdo pago: Plano Completo (R$ 19,90) - Débitos, Restrições, Recalls */}
+          {/* Conteúdo pago: Plano Completo e Premium - Débitos, Restrições, Recalls */}
           {hasPaidPlan && (
             <>
-
-          {/* Technical Data Section */}
-          {(dadosTecnicos && Object.keys(dadosTecnicos).length > 0) && (
+          
+          {/* Dados Técnicos - Disponível para todos os planos pagos */}
+          {(dadosTecnicos && Object.keys(dadosTecnicos).filter(k => dadosTecnicos[k]).length > 0) && (
             <Card className="shadow-soft">
               <CardHeader className="bg-secondary/50">
                 <CardTitle className="flex items-center gap-2">
@@ -649,82 +652,68 @@ const Report = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {debitos?.quantidade_total > 0 ? (
+              {(debitos?.ipva?.possui_debito || debitos?.multas?.possui_debito || debitos?.licenciamento?.possui_debito || debitos?.dpvat?.possui_debito || debitos?.municipais?.possui_debito) ? (
                 <div className="space-y-4">
                   <div className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-semibold text-lg text-destructive">
-                        Total de Débitos: {debitos.quantidade_total}
-                      </div>
-                      {debitos.total_geral > 0 && (
-                        <div className="text-2xl font-bold text-destructive">
-                          R$ {debitos.total_geral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </div>
-                      )}
+                    <div className="font-semibold text-lg text-destructive mb-2">
+                      ⚠️ Veículo possui débitos pendentes
                     </div>
                   </div>
 
-                  {debitos.ipva?.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-semibold flex items-center gap-2">
-                        <XCircle className="w-5 h-5 text-destructive" />
-                        IPVA ({debitos.ipva.length})
-                      </h4>
-                      {debitos.ipva.map((item: any, idx: number) => (
-                        <div key={idx} className="p-3 bg-secondary/30 rounded-lg">
-                          <div className="grid md:grid-cols-3 gap-2 text-sm">
-                            <div><span className="text-muted-foreground">Ano:</span> {item.ano || 'N/A'}</div>
-                            <div><span className="text-muted-foreground">Valor:</span> R$ {item.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || 'N/A'}</div>
-                            <div><span className="text-muted-foreground">Status:</span> {item.status || 'Pendente'}</div>
-                          </div>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {debitos.ipva?.possui_debito && (
+                      <div className="p-4 bg-destructive/5 border border-destructive/30 rounded-lg">
+                        <div className="text-sm text-muted-foreground mb-1">IPVA</div>
+                        <div className="text-xl font-bold text-destructive">
+                          R$ {typeof debitos.ipva.valor === 'string' ? debitos.ipva.valor : debitos.ipva.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      </div>
+                    )}
 
-                  {debitos.multas?.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-semibold flex items-center gap-2">
-                        <XCircle className="w-5 h-5 text-destructive" />
-                        Multas ({debitos.multas.length})
-                      </h4>
-                      {debitos.multas.map((item: any, idx: number) => (
-                        <div key={idx} className="p-3 bg-secondary/30 rounded-lg">
-                          <div className="grid md:grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-muted-foreground">Data:</span> {item.data || 'N/A'}</div>
-                            <div><span className="text-muted-foreground">Valor:</span> R$ {item.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || 'N/A'}</div>
-                            <div className="col-span-2"><span className="text-muted-foreground">Infração:</span> {item.descricao || 'N/A'}</div>
-                          </div>
+                    {debitos.multas?.possui_debito && (
+                      <div className="p-4 bg-destructive/5 border border-destructive/30 rounded-lg">
+                        <div className="text-sm text-muted-foreground mb-1">Multas</div>
+                        <div className="text-xl font-bold text-destructive">
+                          R$ {typeof debitos.multas.valor === 'string' ? debitos.multas.valor : debitos.multas.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      </div>
+                    )}
 
-                  {debitos.licenciamento?.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-semibold flex items-center gap-2">
-                        <XCircle className="w-5 h-5 text-destructive" />
-                        Licenciamento ({debitos.licenciamento.length})
-                      </h4>
-                      {debitos.licenciamento.map((item: any, idx: number) => (
-                        <div key={idx} className="p-3 bg-secondary/30 rounded-lg">
-                          <div className="grid md:grid-cols-3 gap-2 text-sm">
-                            <div><span className="text-muted-foreground">Ano:</span> {item.ano || 'N/A'}</div>
-                            <div><span className="text-muted-foreground">Valor:</span> R$ {item.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || 'N/A'}</div>
-                            <div><span className="text-muted-foreground">Status:</span> {item.status || 'Pendente'}</div>
-                          </div>
+                    {debitos.licenciamento?.possui_debito && (
+                      <div className="p-4 bg-destructive/5 border border-destructive/30 rounded-lg">
+                        <div className="text-sm text-muted-foreground mb-1">Licenciamento</div>
+                        <div className="text-xl font-bold text-destructive">
+                          R$ {typeof debitos.licenciamento.valor === 'string' ? debitos.licenciamento.valor : debitos.licenciamento.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      </div>
+                    )}
+
+                    {debitos.dpvat?.possui_debito && (
+                      <div className="p-4 bg-destructive/5 border border-destructive/30 rounded-lg">
+                        <div className="text-sm text-muted-foreground mb-1">DPVAT</div>
+                        <div className="text-xl font-bold text-destructive">
+                          R$ {typeof debitos.dpvat.valor === 'string' ? debitos.dpvat.valor : debitos.dpvat.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    )}
+
+                    {debitos.municipais?.possui_debito && (
+                      <div className="p-4 bg-destructive/5 border border-destructive/30 rounded-lg">
+                        <div className="text-sm text-muted-foreground mb-1">Débitos Municipais</div>
+                        <div className="text-xl font-bold text-destructive">
+                          R$ {typeof debitos.municipais.valor === 'string' ? debitos.municipais.valor : debitos.municipais.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-8 h-8 text-accent" />
                   <div>
-                    <div className="font-semibold text-lg">Sem débitos pendentes</div>
+                    <div className="font-semibold text-lg">✅ Sem débitos pendentes</div>
                     <div className="text-sm text-muted-foreground">
-                      Não foram encontrados débitos de IPVA, multas ou licenciamento
+                      Não foram encontrados débitos de IPVA, multas, licenciamento ou DPVAT
                     </div>
                   </div>
                 </div>
@@ -741,13 +730,22 @@ const Report = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {restricoes?.tem_restricoes ? (
+              {(restricoes?.judicial?.possui_restricao || restricoes?.administrativa?.possui_restricao || restricoes?.furto?.possui_restricao || restricoes?.tributaria?.possui_restricao || restricoes?.renajud?.possui_restricao || restricoes?.guincho?.possui_restricao || restricoes?.outras?.possui_restricao) ? (
                 <div className="space-y-4">
-                  {restricoes.roubo_furto?.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-semibold flex items-center gap-2 text-destructive">
+                  <div className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
+                    <div className="font-semibold text-lg text-destructive mb-2">
+                      ⚠️ Veículo possui restrições
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Situação: {restricoes.situacao_veiculo || 'N/A'} • Chassi: {restricoes.remarcacao_chassi || 'NORMAL'}
+                    </div>
+                  </div>
+
+                  {restricoes.furto?.possui_restricao && (
+                    <div className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
+                      <h4 className="font-semibold flex items-center gap-2 text-destructive mb-2">
                         <XCircle className="w-5 h-5" />
-                        Roubo/Furto ({restricoes.roubo_furto.length})
+                        Restrição de Roubo/Furto
                       </h4>
                       {restricoes.roubo_furto.map((item: any, idx: number) => (
                         <div key={idx} className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
@@ -931,6 +929,135 @@ const Report = () => {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Histórico de Roubo e Furto - APENAS Premium */}
+          {planType === 'premium' && rouboFurto?.possui_registro && (
+            <Card className="shadow-soft">
+              <CardHeader className="bg-secondary/50">
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-destructive" />
+                  Histórico de Roubo e Furto
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
+                    <div className="font-semibold text-lg text-destructive">
+                      ⚠️ Veículo com registro de roubo/furto
+                    </div>
+                  </div>
+
+                  {rouboFurto.registros?.map((registro: any, idx: number) => (
+                    <div key={idx} className="p-4 border border-border bg-secondary/30 rounded-lg">
+                      <div className="grid md:grid-cols-2 gap-3 text-sm">
+                        {registro.boletim_ocorrencia && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Boletim de Ocorrência</div>
+                            <div className="font-semibold">{registro.boletim_ocorrencia}</div>
+                          </div>
+                        )}
+                        {registro.data_boletim_ocorrencia && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Data</div>
+                            <div className="font-semibold">{registro.data_boletim_ocorrencia}</div>
+                          </div>
+                        )}
+                        {registro.tipo_ocorrencia && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Tipo de Ocorrência</div>
+                            <div className="font-semibold">{registro.tipo_ocorrencia}</div>
+                          </div>
+                        )}
+                        {registro.uf_ocorrencia && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">UF</div>
+                            <div className="font-semibold">{registro.uf_ocorrencia}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Sinistros - APENAS Premium */}
+          {planType === 'premium' && sinistros?.possui_registro && (
+            <Card className="shadow-soft">
+              <CardHeader className="bg-secondary/50">
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-orange-600" />
+                  Histórico de Sinistros
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="p-4 border border-orange-200 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-6 h-6 text-orange-600 flex-shrink-0" />
+                    <div>
+                      <div className="font-semibold text-orange-800 dark:text-orange-400">
+                        ⚠️ Veículo com Registro de Sinistro
+                      </div>
+                      <div className="text-sm text-orange-700 dark:text-orange-500 mt-1">
+                        Este veículo possui histórico de sinistro/acidente registrado
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* RENAINF - APENAS Premium */}
+          {planType === 'premium' && renainf?.possui_infracoes && (
+            <Card className="shadow-soft">
+              <CardHeader className="bg-secondary/50">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-6 h-6 text-primary" />
+                  RENAINF - Infrações de Trânsito
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
+                    <div className="font-semibold text-yellow-800 dark:text-yellow-400">
+                      ℹ️ Veículo possui infrações registradas no RENAINF
+                    </div>
+                  </div>
+
+                  {renainf.infracoes?.map((infracao: any, idx: number) => (
+                    <div key={idx} className="p-4 border border-border bg-secondary/30 rounded-lg">
+                      <div className="space-y-2 text-sm">
+                        {infracao.dados_infracao && (
+                          <div className="grid md:grid-cols-2 gap-3">
+                            {infracao.dados_infracao.numero_auto && (
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">Número Auto</div>
+                                <div className="font-semibold">{infracao.dados_infracao.numero_auto}</div>
+                              </div>
+                            )}
+                            {infracao.dados_infracao.data_infracao && (
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">Data da Infração</div>
+                                <div className="font-semibold">{infracao.dados_infracao.data_infracao}</div>
+                              </div>
+                            )}
+                            {infracao.dados_infracao.descricao && (
+                              <div className="col-span-2">
+                                <div className="text-xs text-muted-foreground mb-1">Descrição</div>
+                                <div className="font-semibold">{infracao.dados_infracao.descricao}</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
