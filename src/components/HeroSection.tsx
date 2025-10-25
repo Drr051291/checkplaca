@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { trackSearch } from "@/lib/analytics";
 
 export const HeroSection = () => {
   const [plate, setPlate] = useState("");
@@ -26,6 +27,9 @@ export const HeroSection = () => {
     }
 
     setIsSearching(true);
+    
+    // Track search event
+    trackSearch(plate.toUpperCase());
     
     try {
       const { data, error } = await supabase.functions.invoke('vehicle-report', {

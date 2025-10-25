@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { usePaymentTracking } from "@/hooks/usePaymentTracking";
+import { trackViewItem, createProductData } from "@/lib/analytics";
 
 const Report = () => {
   const [searchParams] = useSearchParams();
@@ -20,6 +22,9 @@ const Report = () => {
   const [generating, setGenerating] = useState(false);
   const [hasPaidPlan, setHasPaidPlan] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  // Track payment status changes for purchase event
+  usePaymentTracking({ reportId: reportId || '', enabled: !!reportId });
 
   useEffect(() => {
     const fetchReport = async () => {

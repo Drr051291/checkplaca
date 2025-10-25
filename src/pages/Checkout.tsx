@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { trackBeginCheckout, trackAddPaymentInfo, trackLead, trackPixGenerated, createProductData } from "@/lib/analytics";
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
@@ -59,6 +60,12 @@ const Checkout = () => {
 
   const currentPlan = planDetails[planType];
 
+  // Track begin_checkout on component mount
+  useEffect(() => {
+    const product = createProductData(planType, plate);
+    trackBeginCheckout(product);
+  }, [planType, plate]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -94,6 +101,13 @@ const Checkout = () => {
 
     setIsProcessing(true);
 
+    // Track lead (form submission)
+    trackLead(formData.email, formData.phone);
+    
+    // Track add_payment_info
+    const product = createProductData(planType, plate);
+    trackAddPaymentInfo(product, paymentMethod);
+    
     try {
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
@@ -111,6 +125,12 @@ const Checkout = () => {
 
       if (data.success) {
         setPaymentData(data);
+        
+        // Track PIX generation if payment method is PIX
+        if (paymentMethod === 'PIX') {
+          trackPixGenerated(currentPlan.price, data.paymentId);
+        }
+        
         toast({
           title: "Pagamento gerado!",
           description: "Complete o pagamento para liberar seu relatório.",

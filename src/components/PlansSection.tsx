@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { trackViewItem, createProductData } from "@/lib/analytics";
 
 export const PlansSection = () => {
   const navigate = useNavigate();
@@ -118,7 +119,15 @@ export const PlansSection = () => {
                       ? 'gradient-primary hover:opacity-90' 
                       : 'bg-secondary hover:bg-secondary/80'
                   }`}
-                  onClick={plan.onClick}
+                  onClick={() => {
+                    // Track view_item for paid plans
+                    if (index === 1) {
+                      trackViewItem(createProductData('completo'));
+                    } else if (index === 2) {
+                      trackViewItem(createProductData('premium'));
+                    }
+                    plan.onClick();
+                  }}
                 >
                   {plan.cta}
                 </Button>
