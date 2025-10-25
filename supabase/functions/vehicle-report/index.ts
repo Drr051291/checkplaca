@@ -13,23 +13,25 @@ serve(async (req) => {
   }
 
   try {
-    // Get authenticated user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Autenticação necessária');
-    }
-
+    // Make authentication optional. If a token is provided, try to read the user; otherwise continue as anonymous
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      { global: { headers: { Authorization: authHeader } } }
-    );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Autenticação inválida');
+    let userId: string | null = null;
+    try {
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader) {
+        const supabaseClient = createClient(
+          supabaseUrl,
+          supabaseAnonKey,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        userId = user?.id ?? null;
+      }
+    } catch (_) {
+      // ignore auth errors to keep the endpoint public
+      userId = null;
     }
 
     const { plate } = await req.json();
@@ -47,7 +49,7 @@ serve(async (req) => {
       throw new Error('Formato de placa inválido. Use ABC1234 ou ABC1D23');
     }
 
-    console.log('[vehicle-report] Processing request for user:', user.id, 'plate:', cleanPlate);
+    console.log('[vehicle-report] Processing request, user:', userId ?? 'anonymous', 'plate:', cleanPlate);
 
     const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY');
     const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL');
@@ -94,7 +96,7 @@ serve(async (req) => {
       .insert({
         plate: cleanPlate,
         report_data: reportData,
-        user_id: user.id,
+        user_id: userId,
       })
       .select()
       .single();

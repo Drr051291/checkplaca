@@ -1,7 +1,7 @@
 project_id = "mixfzygyqfknoqkgsmsz"
 
 [functions.vehicle-report]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-payment]
 verify_jwt = true
