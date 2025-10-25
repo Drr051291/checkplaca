@@ -465,13 +465,13 @@ const Report = () => {
                             Mais Popular
                           </Badge>
                         </div>
-                        <CardHeader className="bg-gradient-accent text-white text-center pb-4 pt-6">
+                        <CardHeader className="bg-gradient-accent text-center pb-4 pt-6">
                           <div className="mb-4">
-                            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/20 flex items-center justify-center">
-                              <Crown className="w-6 h-6 text-white" />
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/30 flex items-center justify-center backdrop-blur-sm">
+                              <Crown className="w-6 h-6 text-white drop-shadow-md" />
                             </div>
-                            <CardTitle className="text-2xl mb-2">Premium Plus</CardTitle>
-                            <div className="text-4xl font-bold">
+                            <CardTitle className="text-2xl mb-2 text-white font-bold drop-shadow-md">Premium Plus</CardTitle>
+                            <div className="text-4xl font-bold text-white drop-shadow-lg">
                               R$ 39,90
                             </div>
                           </div>
