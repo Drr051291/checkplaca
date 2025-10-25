@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { usePaymentTracking } from "@/hooks/usePaymentTracking";
-import { trackViewItem, createProductData } from "@/lib/analytics";
+import { trackViewItem, createProductData, trackPurchase } from "@/lib/analytics";
 
 const Report = () => {
   const [searchParams] = useSearchParams();
@@ -90,9 +90,19 @@ const Report = () => {
           if (payment.status === 'paid' && !hasPaidPlan) {
             setHasPaidPlan(true);
             
-            // Track purchase event for Meta Pixel
+            // Track purchase event for GA4 and Meta Pixel
             const planType = payment.plan_type === 'premium' ? 'premium' : 'completo';
             const value = parseFloat(payment.amount);
+            const product = createProductData(planType, reportId);
+            
+            // Send Purchase event to GA4
+            trackPurchase({
+              transaction_id: payment.asaas_payment_id || reportId,
+              value: value,
+              currency: 'BRL',
+              items: [product],
+              payment_method: payment.payment_method,
+            });
             
             // Send Purchase event to Meta Pixel
             if (window.fbq) {
@@ -103,7 +113,7 @@ const Report = () => {
                 content_type: 'product',
                 content_ids: [reportId],
               });
-              console.log('[Report] Meta Pixel Purchase event sent:', { value, currency: 'BRL' });
+              console.log('[Report] Purchase events sent to GA4 and Meta Pixel:', { value, currency: 'BRL' });
             }
             
             toast({

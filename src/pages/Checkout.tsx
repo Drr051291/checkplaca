@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { trackBeginCheckout, trackAddPaymentInfo, trackLead, trackPixGenerated, createProductData } from "@/lib/analytics";
+import { trackBeginCheckout, trackAddPaymentInfo, trackLead, trackPixGenerated, createProductData, trackPurchase } from "@/lib/analytics";
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
@@ -212,9 +212,19 @@ const Checkout = () => {
         if (data.isPaid) {
           setCheckingPayment(true);
           
-          // Track purchase event for Meta Pixel
+          // Track purchase event for GA4 and Meta Pixel
           const planType = paymentData.planType === 'premium' ? 'premium' : 'completo';
           const value = paymentData.planType === 'premium' ? 39.90 : 19.90;
+          const product = createProductData(planType, reportId);
+          
+          // Send Purchase event to GA4
+          trackPurchase({
+            transaction_id: reportId,
+            value: value,
+            currency: 'BRL',
+            items: [product],
+            payment_method: paymentData.paymentMethod,
+          });
           
           // Send Purchase event to Meta Pixel
           if (window.fbq) {
@@ -225,7 +235,7 @@ const Checkout = () => {
               content_type: 'product',
               content_ids: [reportId],
             });
-            console.log('[Checkout] Meta Pixel Purchase event sent:', { value, currency: 'BRL' });
+            console.log('[Checkout] Purchase events sent to GA4 and Meta Pixel:', { value, currency: 'BRL' });
           }
           
           toast({
