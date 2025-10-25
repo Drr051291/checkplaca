@@ -1,10 +1,10 @@
 project_id = "mixfzygyqfknoqkgsmsz"
 
 [functions.vehicle-report]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-payment]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-payment]
-verify_jwt = false
+verify_jwt = true

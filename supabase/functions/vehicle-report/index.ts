@@ -13,13 +13,40 @@ serve(async (req) => {
   }
 
   try {
-    const { plate } = await req.json();
-    
-    if (!plate || plate.length !== 7) {
-      throw new Error('Placa inválida. Deve conter 7 caracteres.');
+    // Get authenticated user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
     }
 
-    console.log('Consultando veículo na API Consultar Placa:', plate);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseClient = createClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      throw new Error('Invalid authentication');
+    }
+
+    const { plate } = await req.json();
+
+    // Validate Brazilian plate format (ABC1234 or ABC1D23)
+    const cleanPlate = plate?.toUpperCase().replace(/[^A-Z0-9]/g, '') || '';
+    if (cleanPlate.length !== 7) {
+      throw new Error('Placa deve ter 7 caracteres');
+    }
+    
+    const oldFormat = /^[A-Z]{3}[0-9]{4}$/;
+    const mercosulFormat = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
+    if (!oldFormat.test(cleanPlate) && !mercosulFormat.test(cleanPlate)) {
+      throw new Error('Formato de placa inválido. Use ABC1234 ou ABC1D23');
+    }
+
+    console.log('[vehicle-report] User:', user.id, 'Plate:', cleanPlate);
 
     const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY')?.trim();
     const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL')?.trim();
@@ -27,12 +54,7 @@ serve(async (req) => {
       throw new Error('Credenciais da Consultar Placa não configuradas (email e api key)');
     }
 
-    console.log('API Key configurada:', 'Sim');
-    console.log('Email configurado:', 'Sim');
-    console.log('Tamanho da API Key:', apiKey.length);
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    // Initialize Supabase with service role for database operations
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -46,7 +68,7 @@ serve(async (req) => {
 
     // Consulta direta por placa
     console.log('Chamando endpoint consultarPlaca...');
-    const consultaResponse = await fetch(`https://api.consultarplaca.com.br/v2/consultarPlaca?placa=${encodeURIComponent(plate)}` , {
+    const consultaResponse = await fetch(`https://api.consultarplaca.com.br/v2/consultarPlaca?placa=${encodeURIComponent(cleanPlate)}` , {
       method: 'GET',
       headers: {
         'Authorization': basicAuth,
@@ -83,13 +105,13 @@ serve(async (req) => {
     
     // Consolidar dados do relatório
     const reportData = {
-      plate,
+      plate: cleanPlate,
       vehicleInfo: {
         marca_modelo: dadosVeiculo.marca || dadosVeiculo.marca_modelo || dadosVeiculo.modelo,
         ano_fabricacao: dadosVeiculo.ano_fabricacao,
         ano_modelo: dadosVeiculo.ano_modelo,
         chassi: dadosVeiculo.chassi,
-        placa: dadosVeiculo.placa || plate,
+        placa: dadosVeiculo.placa || cleanPlate,
         renavam: dadosVeiculo.renavam,
         cor: dadosVeiculo.cor,
         combustivel: dadosVeiculo.combustivel,
@@ -109,8 +131,9 @@ serve(async (req) => {
     const { data: savedReport, error: saveError } = await supabase
       .from('vehicle_reports')
       .insert({
-        plate,
+        plate: cleanPlate,
         report_data: reportData,
+        user_id: user.id,
       })
       .select()
       .single();
