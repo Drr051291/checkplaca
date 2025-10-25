@@ -48,13 +48,6 @@ const Index = () => {
               >
                 Planos
               </a>
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/auth')}
-                className="text-xs sm:text-sm font-medium h-8 sm:h-10 px-3 sm:px-4"
-              >
-                Entrar
-              </Button>
             </nav>
           </div>
         </div>
