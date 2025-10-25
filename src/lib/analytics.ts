@@ -179,6 +179,14 @@ export const trackPurchase = (purchaseData: PurchaseData) => {
     },
   });
 
+  // Google Ads - Purchase Event
+  gtag('event', 'purchase', {
+    transaction_id: purchaseData.transaction_id,
+    value: purchaseData.value,
+    currency: purchaseData.currency,
+    items: purchaseData.items,
+  });
+
   // Google Ads - Conversion
   gtag('event', 'conversion', {
     send_to: 'AW-CONVERSION_ID/CONVERSION_LABEL', // Usuário deve substituir
