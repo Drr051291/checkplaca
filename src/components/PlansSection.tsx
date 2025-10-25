@@ -31,12 +31,12 @@ export const PlansSection = () => {
       description: "Perfeito para compra de veículo usado",
       features: [
         "Todos os dados da consulta básica",
-        "Histórico completo de débitos e multas",
-        "Situação de IPVA e licenciamento",
+        "Histórico completo de débitos (IPVA, multas)",
+        "Situação de licenciamento e DPVAT",
         "Verificação de restrições e alienação",
+        "Rastreamento de roubo e furto",
         "Histórico de recalls do fabricante",
-        "Relatório em PDF para download",
-        "Suporte por e-mail"
+        "Relatório em PDF para download"
       ],
       cta: "Obter relatório completo",
       popular: true,
@@ -48,13 +48,12 @@ export const PlansSection = () => {
       headline: "Máxima Segurança",
       description: "Análise completa com laudo detalhado",
       features: [
-        "Todos os benefícios do plano anterior",
-        "Histórico de sinistros e batidas",
-        "Verificação de leilão e salvados",
+        "Todos os benefícios do plano Completo",
+        "Histórico de leilão e salvados",
+        "Verificação detalhada de sinistros",
         "Laudo fotográfico (quando disponível)",
         "Análise de odômetro adulterado",
         "Histórico de proprietários anteriores",
-        "Consultas ilimitadas por 30 dias",
         "Suporte prioritário via WhatsApp"
       ],
       cta: "Obter análise premium",

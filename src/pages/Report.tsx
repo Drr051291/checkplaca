@@ -21,6 +21,7 @@ const Report = () => {
   const [reportData, setReportData] = useState<any>(null);
   const [generating, setGenerating] = useState(false);
   const [hasPaidPlan, setHasPaidPlan] = useState(false);
+  const [planType, setPlanType] = useState<string | null>(null); // 'completo' ou 'premium'
   const reportRef = useRef<HTMLDivElement>(null);
 
   // Track payment status changes for purchase event
@@ -56,6 +57,7 @@ const Report = () => {
         if (accessError) console.error('[Report] report-access error:', accessError);
         if (accessResult?.hasAccess) {
           setHasPaidPlan(true);
+          setPlanType(accessResult.planType || 'completo');
         } else {
           // Fallback: tentativa via consulta direta (quando RLS permitir)
           const { data: paymentData } = await supabase
@@ -64,7 +66,10 @@ const Report = () => {
             .eq('report_id', reportId)
             .eq('status', 'paid')
             .maybeSingle();
-          setHasPaidPlan(!!paymentData);
+          if (paymentData) {
+            setHasPaidPlan(true);
+            setPlanType(paymentData.plan_type || 'completo');
+          }
         }
       } catch (error) {
         console.error('Erro ao carregar relatório:', error);
@@ -98,6 +103,7 @@ const Report = () => {
           if (payment?.status === 'paid') {
             console.log('[Report] Payment confirmed, unlocking report');
             setHasPaidPlan(true);
+            setPlanType(payment.plan_type || 'completo');
             
             // Track purchase event for GA4 and Meta Pixel
             const planType = payment.plan_type === 'premium' ? 'premium' : 'completo';
@@ -538,7 +544,7 @@ const Report = () => {
             </>
           )}
 
-          {/* Resto do conteúdo só aparece se tiver pago */}
+          {/* Conteúdo pago: Plano Completo (R$ 19,90) - Débitos, Restrições, Recalls */}
           {hasPaidPlan && (
             <>
 
@@ -634,7 +640,7 @@ const Report = () => {
             </Card>
           )}
 
-          {/* Debts Section */}
+          {/* Débitos - Plano Completo e Premium */}
           <Card className="shadow-soft">
             <CardHeader className="bg-secondary/50">
               <CardTitle className="flex items-center gap-2">
@@ -726,7 +732,7 @@ const Report = () => {
             </CardContent>
           </Card>
 
-          {/* Restrictions Section */}
+          {/* Restrições - Plano Completo e Premium */}
           <Card className="shadow-soft">
             <CardHeader className="bg-secondary/50">
               <CardTitle className="flex items-center gap-2">
@@ -815,119 +821,121 @@ const Report = () => {
             </CardContent>
           </Card>
 
-          {/* Auction/Leilão Section */}
-          <Card className="shadow-soft">
-            <CardHeader className="bg-secondary/50">
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-6 h-6 text-yellow-600" />
-                Histórico de Leilão
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {leilao?.tem_historico && leilao.historico?.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
-                    <div className="flex items-start gap-3 mb-3">
-                      <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-1" />
-                      <div>
-                        <div className="font-semibold text-lg text-yellow-800 dark:text-yellow-400">
-                          ⚠️ Veículo com Histórico de Leilão
+          {/* Leilão - APENAS Premium (R$ 39,90) */}
+          {planType === 'premium' && (
+            <Card className="shadow-soft">
+              <CardHeader className="bg-secondary/50">
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                  Histórico de Leilão
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {leilao?.tem_historico && leilao.historico?.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
+                      <div className="flex items-start gap-3 mb-3">
+                        <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-1" />
+                        <div>
+                          <div className="font-semibold text-lg text-yellow-800 dark:text-yellow-400">
+                            ⚠️ Veículo com Histórico de Leilão
+                          </div>
+                          <div className="text-sm text-yellow-700 dark:text-yellow-500 mt-1">
+                            Este veículo já passou por processo de leilão
+                          </div>
                         </div>
-                        <div className="text-sm text-yellow-700 dark:text-yellow-500 mt-1">
-                          Este veículo já passou por processo de leilão
+                      </div>
+                    </div>
+                    
+                    {leilao.historico.map((item: any, index: number) => (
+                      <div key={index} className="p-4 border border-border bg-secondary/30 rounded-lg space-y-3">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          {item.data_leilao && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Data do Leilão</div>
+                              <div className="font-semibold">{item.data_leilao}</div>
+                            </div>
+                          )}
+                          {item.leiloeiro && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Leiloeiro</div>
+                              <div className="font-semibold">{item.leiloeiro}</div>
+                            </div>
+                          )}
+                          {item.comitente && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Comitente</div>
+                              <div className="font-semibold">{item.comitente}</div>
+                            </div>
+                          )}
+                          {item.lote && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Lote</div>
+                              <div className="font-semibold">{item.lote}</div>
+                            </div>
+                          )}
+                          {item.situacao && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Situação</div>
+                              <Badge variant="outline" className="border-yellow-600 text-yellow-700 dark:text-yellow-400">
+                                {item.situacao}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                        {item.observacao && (
+                          <div className="pt-3 border-t">
+                            <div className="text-xs text-muted-foreground mb-1">Observação</div>
+                            <div className="text-sm">{item.observacao}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {leilao.detalhes && (
+                      <div className="p-4 border border-blue-200 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-2">Detalhes Adicionais</div>
+                        <div className="text-sm">{JSON.stringify(leilao.detalhes, null, 2)}</div>
+                      </div>
+                    )}
+
+                    <div className="text-xs text-muted-foreground mt-4 p-3 bg-muted/50 rounded-lg">
+                      ℹ️ <strong>Importante:</strong> Veículos com histórico de leilão podem ter tido sinistro, 
+                      recuperação de seguros ou outras ocorrências. Recomenda-se vistoria detalhada antes da compra.
+                    </div>
+                  </div>
+                ) : dadosLeilao && Object.keys(dadosLeilao).length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+                        <div className="space-y-2 w-full">
+                          <div className="font-semibold text-yellow-800 dark:text-yellow-400">
+                            Informações de Leilão Detectadas
+                          </div>
+                          <pre className="text-xs bg-background/50 p-3 rounded overflow-auto">
+                            {JSON.stringify(dadosLeilao, null, 2)}
+                          </pre>
                         </div>
                       </div>
                     </div>
                   </div>
-                  
-                  {leilao.historico.map((item: any, index: number) => (
-                    <div key={index} className="p-4 border border-border bg-secondary/30 rounded-lg space-y-3">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        {item.data_leilao && (
-                          <div>
-                            <div className="text-xs text-muted-foreground mb-1">Data do Leilão</div>
-                            <div className="font-semibold">{item.data_leilao}</div>
-                          </div>
-                        )}
-                        {item.leiloeiro && (
-                          <div>
-                            <div className="text-xs text-muted-foreground mb-1">Leiloeiro</div>
-                            <div className="font-semibold">{item.leiloeiro}</div>
-                          </div>
-                        )}
-                        {item.comitente && (
-                          <div>
-                            <div className="text-xs text-muted-foreground mb-1">Comitente</div>
-                            <div className="font-semibold">{item.comitente}</div>
-                          </div>
-                        )}
-                        {item.lote && (
-                          <div>
-                            <div className="text-xs text-muted-foreground mb-1">Lote</div>
-                            <div className="font-semibold">{item.lote}</div>
-                          </div>
-                        )}
-                        {item.situacao && (
-                          <div>
-                            <div className="text-xs text-muted-foreground mb-1">Situação</div>
-                            <Badge variant="outline" className="border-yellow-600 text-yellow-700 dark:text-yellow-400">
-                              {item.situacao}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-                      {item.observacao && (
-                        <div className="pt-3 border-t">
-                          <div className="text-xs text-muted-foreground mb-1">Observação</div>
-                          <div className="text-sm">{item.observacao}</div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {leilao.detalhes && (
-                    <div className="p-4 border border-blue-200 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                      <div className="text-xs text-muted-foreground mb-2">Detalhes Adicionais</div>
-                      <div className="text-sm">{JSON.stringify(leilao.detalhes, null, 2)}</div>
-                    </div>
-                  )}
-
-                  <div className="text-xs text-muted-foreground mt-4 p-3 bg-muted/50 rounded-lg">
-                    ℹ️ <strong>Importante:</strong> Veículos com histórico de leilão podem ter tido sinistro, 
-                    recuperação de seguros ou outras ocorrências. Recomenda-se vistoria detalhada antes da compra.
-                  </div>
-                </div>
-              ) : dadosLeilao && Object.keys(dadosLeilao).length > 0 ? (
-                <div className="space-y-3">
-                  <div className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
-                      <div className="space-y-2 w-full">
-                        <div className="font-semibold text-yellow-800 dark:text-yellow-400">
-                          Informações de Leilão Detectadas
-                        </div>
-                        <pre className="text-xs bg-background/50 p-3 rounded overflow-auto">
-                          {JSON.stringify(dadosLeilao, null, 2)}
-                        </pre>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-8 h-8 text-accent" />
+                    <div>
+                      <div className="font-semibold text-lg">Sem histórico de leilão</div>
+                      <div className="text-sm text-muted-foreground">
+                        Não foram encontrados registros de leilão para este veículo
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-8 h-8 text-accent" />
-                  <div>
-                    <div className="font-semibold text-lg">Sem histórico de leilão</div>
-                    <div className="text-sm text-muted-foreground">
-                      Não foram encontrados registros de leilão para este veículo
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Recalls Section */}
+          {/* Recalls - Plano Completo e Premium */}
           <Card className="shadow-soft">
             <CardHeader className="bg-secondary/50">
               <CardTitle className="flex items-center gap-2">
