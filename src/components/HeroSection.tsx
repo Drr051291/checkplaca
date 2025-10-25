@@ -28,6 +28,20 @@ export const HeroSection = () => {
 
     setIsSearching(true);
     
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setIsSearching(false);
+      toast({
+        title: "Login necessário",
+        description: "Faça login para consultar veículos.",
+        variant: "destructive",
+      });
+      navigate(`/auth?redirect=/&plate=${plate.toUpperCase()}`);
+      return;
+    }
+    
     // Track search event
     trackSearch(plate.toUpperCase());
     
