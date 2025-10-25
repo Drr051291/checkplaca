@@ -456,111 +456,126 @@ const Checkout = () => {
                   <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Dados Pessoais */}
                     <div className="space-y-4">
-                      <h3 className="font-semibold">Seus dados</h3>
+                      <h3 className="font-semibold text-lg">Dados Pessoais</h3>
                       
                       <div>
-                        <Label htmlFor="name">Nome completo *</Label>
+                        <Label htmlFor="name">Nome Completo</Label>
                         <Input
                           id="name"
                           type="text"
-                          placeholder="João Silva"
                           value={formData.name}
                           onChange={(e) => handleInputChange('name', e.target.value)}
+                          placeholder="João Silva"
                           required
-                          className="mt-2"
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="email">E-mail *</Label>
+                        <Label htmlFor="email">E-mail</Label>
                         <Input
                           id="email"
                           type="email"
-                          placeholder="seu@email.com"
                           value={formData.email}
                           onChange={(e) => handleInputChange('email', e.target.value)}
+                          placeholder="seuemail@exemplo.com"
                           required
-                          className="mt-2"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="cpf">CPF *</Label>
+                          <Label htmlFor="phone">Telefone</Label>
                           <Input
-                            id="cpf"
-                            type="text"
-                            placeholder="000.000.000-00"
-                            value={formData.cpf}
-                            onChange={(e) => handleInputChange('cpf', formatCPF(e.target.value))}
-                            maxLength={14}
+                            id="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) => handleInputChange('phone', formatPhone(e.target.value))}
+                            placeholder="(11) 99999-9999"
                             required
-                            className="mt-2"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="phone">Telefone *</Label>
+                          <Label htmlFor="cpf">CPF</Label>
                           <Input
-                            id="phone"
+                            id="cpf"
                             type="text"
-                            placeholder="(00) 00000-0000"
-                            value={formData.phone}
-                            onChange={(e) => handleInputChange('phone', formatPhone(e.target.value))}
-                            maxLength={15}
+                            value={formData.cpf}
+                            onChange={(e) => handleInputChange('cpf', formatCPF(e.target.value))}
+                            placeholder="000.000.000-00"
                             required
-                            className="mt-2"
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Forma de Pagamento */}
-                    <div className="space-y-4 border-t pt-6">
-                      <h3 className="font-semibold">Forma de pagamento</h3>
+                    {/* Método de Pagamento */}
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg">Forma de Pagamento</h3>
                       
-                      <RadioGroup value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
-                        <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50">
-                          <RadioGroupItem value="PIX" id="pix" />
-                          <Label htmlFor="pix" className="flex-1 cursor-pointer">
-                            <div className="flex items-center gap-2">
-                              <QrCode className="w-5 h-5" />
-                              <span className="font-semibold">PIX</span>
-                              <Badge variant="secondary" className="ml-auto">Aprovação imediata</Badge>
-                            </div>
-                          </Label>
-                        </div>
+                      <Tabs value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'PIX' | 'CREDIT_CARD')}>
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="PIX" className="flex items-center gap-2">
+                            <QrCode className="w-4 h-4" />
+                            PIX
+                          </TabsTrigger>
+                          <TabsTrigger value="CREDIT_CARD" className="flex items-center gap-2">
+                            <CreditCard className="w-4 h-4" />
+                            Cartão de Crédito
+                          </TabsTrigger>
+                        </TabsList>
 
-                        <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50">
-                          <RadioGroupItem value="CREDIT_CARD" id="credit" />
-                          <Label htmlFor="credit" className="flex-1 cursor-pointer">
-                            <div className="flex items-center gap-2">
-                              <CreditCard className="w-5 h-5" />
-                              <span className="font-semibold">Cartão de Crédito</span>
-                              <Badge variant="secondary" className="ml-auto">Aprovação imediata</Badge>
+                        <TabsContent value="PIX" className="mt-4">
+                          <div className="bg-secondary/20 rounded-lg p-4 space-y-2">
+                            <div className="flex items-start gap-3">
+                              <QrCode className="w-5 h-5 text-primary mt-0.5" />
+                              <div>
+                                <p className="font-semibold">Pagamento via PIX</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Aprovação instantânea. Escaneie o QR Code ou use o PIX Copia e Cola.
+                                </p>
+                              </div>
                             </div>
-                          </Label>
-                        </div>
-                      </RadioGroup>
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="CREDIT_CARD" className="mt-4">
+                          <div className="bg-secondary/20 rounded-lg p-4 space-y-2">
+                            <div className="flex items-start gap-3">
+                              <CreditCard className="w-5 h-5 text-primary mt-0.5" />
+                              <div>
+                                <p className="font-semibold">Cartão de Crédito</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Pagamento seguro. Você será redirecionado para completar a compra.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
                     </div>
 
-                    <Button 
+                    <Button
                       type="submit"
+                      size="lg"
+                      className="w-full h-14 gradient-primary font-semibold"
                       disabled={isProcessing}
-                      className="w-full h-14 text-lg font-semibold gradient-primary"
                     >
                       {isProcessing ? (
-                        "Processando..."
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Processando...
+                        </>
                       ) : (
                         <>
-                          <Lock className="mr-2" />
-                          Finalizar Pagamento - R$ {currentPlan.price.toFixed(2)}
+                          <Lock className="mr-2 h-5 w-5" />
+                          {paymentMethod === 'PIX' ? 'Gerar PIX' : 'Pagar com Cartão'}
                         </>
                       )}
                     </Button>
 
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                       <Lock className="w-4 h-4" />
-                      <span>Pagamento 100% seguro via Asaas</span>
+                      <span>Pagamento 100% seguro e criptografado</span>
                     </div>
                   </form>
                 </CardContent>
@@ -569,37 +584,36 @@ const Checkout = () => {
 
             {/* Order Summary */}
             <div className="md:col-span-2">
-              <Card className="shadow-soft sticky top-24">
-                <CardHeader className="bg-secondary/50">
-                  <CardTitle className="text-lg">Resumo do Pedido</CardTitle>
+              <Card className="shadow-strong sticky top-24">
+                <CardHeader>
+                  <CardTitle>Resumo do Pedido</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="space-y-4">
                   <div>
-                    <div className="text-sm text-muted-foreground mb-1">Placa do veículo</div>
-                    <div className="text-xl font-bold tracking-wider">{plate}</div>
-                  </div>
-
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Plano selecionado</div>
-                    <div className="font-semibold">{currentPlan.name}</div>
-                  </div>
-
-                  <div className="border-t border-border pt-4">
-                    <div className="text-sm text-muted-foreground mb-3">Incluído:</div>
-                    <div className="space-y-2">
+                    <h4 className="font-semibold mb-2">{currentPlan.name}</h4>
+                    <Badge variant="secondary" className="mb-3">
+                      {planType === 'premium' ? 'Mais Completo' : 'Popular'}
+                    </Badge>
+                    <ul className="space-y-2">
                       {currentPlan.features.map((feature, index) => (
-                        <div key={index} className="flex items-start gap-2 text-sm">
-                          <CheckCircle className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+                        <li key={index} className="flex items-start gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                           <span>{feature}</span>
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </div>
 
-                  <div className="border-t border-border pt-4">
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-muted-foreground">Placa do Veículo:</span>
+                      <span className="font-mono font-bold">{plate}</span>
+                    </div>
                     <div className="flex justify-between items-center text-lg font-bold">
-                      <span>Total</span>
-                      <span className="text-accent">R$ {currentPlan.price.toFixed(2)}</span>
+                      <span>Total:</span>
+                      <span className="text-2xl text-accent">
+                        R$ {currentPlan.price.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
