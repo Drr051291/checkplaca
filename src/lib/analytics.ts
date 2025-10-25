@@ -202,9 +202,14 @@ export const trackPurchase = (purchaseData: PurchaseData) => {
  * Evento customizado para rastrear buscas
  */
 export const trackSearch = (plate: string) => {
-  // GA4
+  // GA4 - DataLayer
   pushToDataLayer({
     event: 'search',
+    search_term: plate,
+  });
+
+  // GA4 - gtag
+  gtag('event', 'search', {
     search_term: plate,
   });
 
@@ -219,9 +224,14 @@ export const trackSearch = (plate: string) => {
  * Dispara quando usuário preenche dados no checkout
  */
 export const trackLead = (email: string, phone?: string) => {
-  // GA4
+  // GA4 - DataLayer
   pushToDataLayer({
     event: 'generate_lead',
+    value: 0,
+  });
+
+  // GA4 - gtag
+  gtag('event', 'generate_lead', {
     value: 0,
   });
 
@@ -236,6 +246,7 @@ export const trackLead = (email: string, phone?: string) => {
  * Evento customizado para rastrear quando PIX é gerado
  */
 export const trackPixGenerated = (value: number, paymentId: string) => {
+  // GA4 - DataLayer
   pushToDataLayer({
     event: 'pix_generated',
     value: value,
@@ -243,6 +254,14 @@ export const trackPixGenerated = (value: number, paymentId: string) => {
     payment_id: paymentId,
   });
 
+  // GA4 - gtag
+  gtag('event', 'pix_generated', {
+    value: value,
+    currency: 'BRL',
+    payment_id: paymentId,
+  });
+
+  // Meta Pixel
   fbq('trackCustom', 'PixGenerated', {
     value: value,
     currency: 'BRL',
