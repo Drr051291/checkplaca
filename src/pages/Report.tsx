@@ -465,13 +465,16 @@ const Report = () => {
                             Mais Popular
                           </Badge>
                         </div>
-                        <CardHeader className="bg-gradient-accent text-center pb-4 pt-6">
-                          <div className="mb-4">
-                            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/30 flex items-center justify-center backdrop-blur-sm">
-                              <Crown className="w-6 h-6 text-white drop-shadow-md" />
+                        <CardHeader className="relative overflow-hidden text-center pb-6 pt-8 bg-gradient-to-br from-accent via-accent to-accent-glow">
+                          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
+                          <div className="relative z-10">
+                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/25 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-lg">
+                              <Crown className="w-8 h-8 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]" />
                             </div>
-                            <CardTitle className="text-2xl mb-2 text-white font-bold drop-shadow-md">Premium Plus</CardTitle>
-                            <div className="text-4xl font-bold text-white drop-shadow-lg">
+                            <CardTitle className="text-3xl mb-3 text-white font-display font-bold tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+                              Premium Plus
+                            </CardTitle>
+                            <div className="text-5xl font-display font-black text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.3)] tracking-tight">
                               R$ 39,90
                             </div>
                           </div>
