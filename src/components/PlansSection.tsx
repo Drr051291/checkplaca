@@ -114,10 +114,9 @@ export const PlansSection = () => {
                 </ul>
 
                 <Button 
+                  variant={plan.popular ? "default" : "outline"}
                   className={`w-full h-12 font-semibold ${
-                    plan.popular 
-                      ? 'gradient-primary hover:opacity-90' 
-                      : 'bg-secondary hover:bg-secondary/80'
+                    plan.popular ? 'gradient-primary hover:opacity-90' : ''
                   }`}
                   onClick={() => {
                     // Track view_item for paid plans
