@@ -13,13 +13,14 @@ serve(async (req) => {
   }
 
   try {
-    const { plate } = await req.json();
+    const { plate, planType } = await req.json();
     
     if (!plate || plate.length !== 7) {
       throw new Error('Placa inválida. Deve conter 7 caracteres.');
     }
 
     console.log('Consultando veículo na API Consultar Placa:', plate);
+    console.log('Tipo de plano:', planType || 'basico (consulta gratuita)');
 
     const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY')?.trim();
     const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL')?.trim();
@@ -36,51 +37,217 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('Solicitando relatório...');
-
     // Autenticação Basic: email:apiKey (conforme documentação)
     const credentials = `${apiEmail}:${apiKey}`;
-    // Encode credentials safely even if email has non-ASCII chars
     const encodedCredentials = btoa(unescape(encodeURIComponent(credentials)));
     const basicAuth = `Basic ${encodedCredentials}`;
 
-    // Consulta direta por placa
-    console.log('Chamando endpoint consultarPlaca...');
-    const consultaResponse = await fetch(`https://api.consultarplaca.com.br/v2/consultarPlaca?placa=${encodeURIComponent(plate)}` , {
-      method: 'GET',
+    // SE NÃO TEM PLANTYPE, faz consulta básica gratuita
+    if (!planType) {
+      console.log('Fazendo consulta básica gratuita...');
+      const consultaResponse = await fetch(
+        `https://api.consultarplaca.com.br/v2/consultarPlaca?placa=${encodeURIComponent(plate)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': basicAuth,
+            'Accept': 'application/json',
+          },
+        }
+      );
+
+      if (!consultaResponse.ok) {
+        const errorText = await consultaResponse.text();
+        let message = `Erro ao consultar placa: ${consultaResponse.status}`;
+        try {
+          const maybeJson = JSON.parse(errorText);
+          if (maybeJson?.mensagem) message = maybeJson.mensagem;
+          if (maybeJson?.error) message = maybeJson.error;
+        } catch {}
+        console.error('Erro ao consultar placa:', message);
+        return new Response(
+          JSON.stringify({ success: false, error: message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: consultaResponse.status }
+        );
+      }
+
+      const basicData = await consultaResponse.json();
+      console.log('Resposta da consulta básica:', JSON.stringify(basicData));
+
+      if (basicData.status !== 'ok') {
+        throw new Error(basicData.mensagem || 'Erro na consulta de placa');
+      }
+
+      // Processa dados básicos
+      const dados = basicData.dados || {};
+      const infoVeiculo = dados.informacoes_veiculo || {};
+      const dadosVeiculo = infoVeiculo.dados_veiculo || {};
+      const dadosTecnicos = infoVeiculo.dados_tecnicos || {};
+      const dadosCarga = infoVeiculo.dados_carga || {};
+
+      const reportData = {
+        plate,
+        vehicleInfo: {
+          marca_modelo: dadosVeiculo.marca || dadosVeiculo.modelo,
+          ano_fabricacao: dadosVeiculo.ano_fabricacao,
+          ano_modelo: dadosVeiculo.ano_modelo,
+          chassi: dadosVeiculo.chassi,
+          placa: dadosVeiculo.placa || plate,
+          cor: dadosVeiculo.cor,
+          combustivel: dadosVeiculo.combustivel,
+          categoria: dadosVeiculo.tipo_veiculo,
+          segmento: dadosVeiculo.segmento,
+          procedencia: dadosVeiculo.procedencia,
+          municipio: dadosVeiculo.municipio,
+          uf: dadosVeiculo.uf_municipio || dadosVeiculo.uf,
+        },
+        dadosTecnicos: {
+          tipo_veiculo: dadosTecnicos.tipo_veiculo,
+          sub_segmento: dadosTecnicos.sub_segmento,
+          numero_motor: dadosTecnicos.numero_motor,
+          numero_caixa_cambio: dadosTecnicos.numero_caixa_cambio,
+          potencia: dadosTecnicos.potencia,
+          cilindradas: dadosTecnicos.cilindradas,
+        },
+        dadosCarga: {
+          numero_eixos: dadosCarga.numero_eixos,
+          capacidade_maxima_tracao: dadosCarga.capacidade_maxima_tracao,
+          capacidade_passageiro: dadosCarga.capacidade_passageiro,
+          peso_bruto_total: dadosCarga.peso_bruto_total,
+        },
+        consultedAt: new Date().toISOString(),
+        raw: basicData,
+      };
+
+      // Salvar no banco
+      const { data: savedReport, error: saveError } = await supabase
+        .from('vehicle_reports')
+        .insert({
+          plate,
+          report_data: reportData,
+        })
+        .select()
+        .single();
+
+      if (saveError) {
+        console.error('Erro ao salvar relatório:', saveError);
+        throw saveError;
+      }
+
+      console.log('Relatório básico salvo com sucesso:', savedReport.id);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          reportId: savedReport.id,
+          data: reportData,
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
+
+    // SE TEM PLANTYPE, faz consulta completa via protocolo
+    console.log('Fazendo consulta completa via protocolo...');
+    
+    // Mapear planos para tipos de consulta da API
+    const planTypeMap: Record<string, string> = {
+      'basico': 'bronze',
+      'completo': 'ouro',
+      'premium': 'diamante'
+    };
+
+    const tipoConsulta = planTypeMap[planType] || 'ouro';
+    console.log('Tipo de consulta mapeado:', tipoConsulta);
+
+    // PASSO 1: Solicitar relatório via POST
+    console.log('Solicitando relatório...');
+    const formData = new FormData();
+    formData.append('placa', plate);
+    formData.append('tipo_consulta', tipoConsulta);
+
+    const solicitacaoResponse = await fetch('https://api.consultarplaca.com.br/v2/solicitarRelatorio', {
+      method: 'POST',
       headers: {
         'Authorization': basicAuth,
-        'Accept': 'application/json',
       },
+      body: formData,
     });
 
-    if (!consultaResponse.ok) {
-      const errorText = await consultaResponse.text();
-      let message = `Erro ao consultar placa: ${consultaResponse.status}`;
+    if (!solicitacaoResponse.ok) {
+      const errorText = await solicitacaoResponse.text();
+      let message = `Erro ao solicitar relatório: ${solicitacaoResponse.status}`;
       try {
         const maybeJson = JSON.parse(errorText);
         if (maybeJson?.mensagem) message = maybeJson.mensagem;
         if (maybeJson?.error) message = maybeJson.error;
       } catch {}
-      console.error('Erro ao consultar placa:', message);
+      console.error('Erro ao solicitar relatório:', message);
       return new Response(
         JSON.stringify({ success: false, error: message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: consultaResponse.status }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: solicitacaoResponse.status }
       );
     }
 
-    const consultaData = await consultaResponse.json();
-    console.log('Resposta da consulta:', JSON.stringify(consultaData));
+    const solicitacaoData = await solicitacaoResponse.json();
+    console.log('Resposta da solicitação:', JSON.stringify(solicitacaoData));
 
-    if (consultaData.status !== 'ok') {
-      throw new Error(consultaData.mensagem || 'Erro na consulta de placa');
+    if (solicitacaoData.status !== 'ok') {
+      throw new Error(solicitacaoData.mensagem || 'Erro ao solicitar relatório');
     }
 
-    // Extrair dados do veículo conforme estrutura da documentação
-    const dados = consultaData.dados || {};
+    const protocolo = solicitacaoData.protocolo;
+    console.log('Protocolo gerado:', protocolo);
+
+    // PASSO 2: Fazer polling do protocolo até consulta finalizar
+    let consultaData: any = null;
+    let tentativas = 0;
+    const maxTentativas = 30; // 30 tentativas x 2 segundos = 60 segundos max
     
-    // A API pode retornar dados como array ou objeto
-    const dadosArray = Array.isArray(dados) ? dados : [dados];
+    while (tentativas < maxTentativas) {
+      console.log(`Tentativa ${tentativas + 1} de consultar protocolo...`);
+      
+      const protocoloResponse = await fetch(
+        `https://api.consultarplaca.com.br/v2/consultarProtocolo?protocolo=${protocolo}&tipo_retorno=JSON`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': basicAuth,
+            'Accept': 'application/json',
+          },
+        }
+      );
+
+      if (!protocoloResponse.ok) {
+        throw new Error(`Erro ao consultar protocolo: ${protocoloResponse.status}`);
+      }
+
+      const protocoloData = await protocoloResponse.json();
+      console.log('Situação da consulta:', protocoloData.situacao_consulta);
+
+      if (protocoloData.situacao_consulta === 'finalizada' || protocoloData.situacao_consulta === 'parcialmente_finalizada') {
+        consultaData = protocoloData;
+        break;
+      }
+
+      // Aguardar 2 segundos antes de tentar novamente
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      tentativas++;
+    }
+
+    if (!consultaData) {
+      throw new Error('Timeout ao aguardar processamento do relatório');
+    }
+
+    console.log('Consulta finalizada:', JSON.stringify(consultaData));
+
+    // Extrair dados do veículo conforme estrutura da documentação
+    const dados = consultaData.dados || [];
+    
+    // A API retorna dados como array de objetos
+    const dadosArray = Array.isArray(dados) ? dados : [];
     
     // Extrair informações do veículo
     const infoVeiculoObj = dadosArray.find(d => d.informacoes_veiculo) || {};
