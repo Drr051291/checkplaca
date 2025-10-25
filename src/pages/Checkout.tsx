@@ -173,7 +173,34 @@ const Checkout = () => {
         body: requestBody,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Checkout] create-payment error:', error);
+
+        // Extrai mensagem amigável do gateway
+        let friendly = 'Não foi possível processar o pagamento no cartão. Verifique os dados e tente novamente.';
+        const ctx: any = (error as any).context;
+
+        let body: any = ctx?.body;
+        if (typeof body === 'string') {
+          try { body = JSON.parse(body); } catch {}
+        }
+        if (body?.errors?.[0]?.description) {
+          friendly = body.errors[0].description;
+        } else if (body?.message) {
+          friendly = body.message;
+        } else if ((error as any).message && !(error as any).message.includes('non-2xx')) {
+          friendly = (error as any).message;
+        }
+
+        toast({
+          title: 'Erro no pagamento',
+          description: friendly,
+          variant: 'destructive',
+        });
+
+        setIsProcessing(false);
+        return;
+      }
 
       if (data.success) {
         setPaymentData(data);
@@ -190,13 +217,29 @@ const Checkout = () => {
             : "Complete o pagamento para liberar seu relatório.",
         });
       } else {
-        throw new Error(data.error || 'Erro ao processar pagamento');
+        toast({
+          title: 'Erro no pagamento',
+          description: data.error || 'Não foi possível processar o pagamento. Tente novamente.',
+          variant: 'destructive',
+        });
+        setIsProcessing(false);
+        return;
       }
     } catch (error: any) {
       console.error('[Checkout] Erro:', error);
+      let friendly = "Não foi possível processar o pagamento. Tente novamente.";
+      const ctx: any = (error as any).context;
+      let body: any = ctx?.body;
+      if (typeof body === 'string') {
+        try { body = JSON.parse(body); } catch {}
+      }
+      if (body?.errors?.[0]?.description) friendly = body.errors[0].description;
+      else if (body?.message) friendly = body.message;
+      else if (error?.message && !(error.message as string).includes('non-2xx')) friendly = error.message;
+
       toast({
         title: "Erro no pagamento",
-        description: error.message || "Não foi possível processar o pagamento. Tente novamente.",
+        description: friendly,
         variant: "destructive",
       });
     } finally {
