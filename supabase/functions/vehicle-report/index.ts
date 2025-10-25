@@ -81,6 +81,12 @@ serve(async (req) => {
     const infoVeiculo = dados.informacoes_veiculo || {};
     const dadosVeiculo = infoVeiculo.dados_veiculo || {};
     
+    // Extrair informações de leilão
+    const leilao = dados.leilao || {};
+    const historicoLeiloes = leilao.historico || [];
+    
+    console.log('Dados de leilão encontrados:', JSON.stringify(leilao));
+    
     // Consolidar dados do relatório
     const reportData = {
       plate,
@@ -96,6 +102,11 @@ serve(async (req) => {
         categoria: dadosVeiculo.tipo_veiculo || dadosVeiculo.categoria,
         municipio: dadosVeiculo.municipio,
         uf: dadosVeiculo.uf_municipio || dadosVeiculo.uf,
+      },
+      leilao: {
+        tem_historico: historicoLeiloes.length > 0,
+        historico: historicoLeiloes,
+        detalhes: leilao.detalhes || null,
       },
       restricoes: [],
       recalls: [],
