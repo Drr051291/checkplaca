@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import CarBrandLogo from "@/components/CarBrandLogo";
 
 const Report = () => {
   const [searchParams] = useSearchParams();
@@ -247,25 +246,18 @@ const Report = () => {
           {/* Header Card */}
           <Card className="shadow-strong">
             <CardHeader className="bg-gradient-primary text-white">
-              <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-3">
                   <Car className="w-8 h-8" />
                   <div>
-                    <div className="text-sm opacity-90">Relatório Completo</div>
+                    <div className="text-sm opacity-90">Placa consultada</div>
                     <div className="text-3xl font-bold tracking-wider">{plate}</div>
                   </div>
                 </CardTitle>
-                <div className="flex items-center gap-4">
-                  {vehicleInfo?.marca_modelo && (
-                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                      <CarBrandLogo brandName={vehicleInfo.marca_modelo} />
-                    </div>
-                  )}
-                  <Badge className="bg-accent text-accent-foreground text-sm px-4 py-2">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Consulta Realizada
-                  </Badge>
-                </div>
+                <Badge className="bg-accent text-accent-foreground text-sm px-4 py-2">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Consulta Realizada
+                </Badge>
               </div>
             </CardHeader>
             <CardContent className="p-6">
