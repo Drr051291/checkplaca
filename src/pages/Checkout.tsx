@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { trackBeginCheckout, trackAddPaymentInfo, trackLead, trackPixGenerated, createProductData } from "@/lib/analytics";
-import { sendMetaConversion, generateEventId } from "@/lib/metaConversion";
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
@@ -64,21 +63,7 @@ const Checkout = () => {
   // Track begin_checkout on component mount
   useEffect(() => {
     const product = createProductData(planType, plate);
-    const eventId = generateEventId();
-    
-    // Track to Pixel with event_id
-    trackBeginCheckout(product, eventId);
-    
-    // Send to Meta Conversions API with same event_id for deduplication
-    sendMetaConversion({
-      eventName: 'InitiateCheckout',
-      eventId: eventId,
-      value: planDetails[planType].price,
-      currency: 'BRL',
-      contentIds: [planType],
-      contentType: 'product',
-      contentName: planDetails[planType].name,
-    });
+    trackBeginCheckout(product);
   }, [planType, plate]);
 
   const handleInputChange = (field: string, value: string) => {
@@ -117,38 +102,11 @@ const Checkout = () => {
     setIsProcessing(true);
 
     // Track lead (form submission)
-    const leadEventId = generateEventId();
-    trackLead(formData.email, formData.phone, leadEventId);
-    
-    // Send Lead to Meta Conversions API with same event_id
-    await sendMetaConversion({
-      eventName: 'Lead',
-      eventId: leadEventId,
-      email: formData.email,
-      phone: formData.phone,
-      firstName: formData.name.split(' ')[0],
-      lastName: formData.name.split(' ').slice(1).join(' '),
-    });
+    trackLead(formData.email, formData.phone);
     
     // Track add_payment_info
     const product = createProductData(planType, plate);
-    const paymentInfoEventId = generateEventId();
-    trackAddPaymentInfo(product, paymentMethod, paymentInfoEventId);
-    
-    // Send AddPaymentInfo to Meta Conversions API with same event_id
-    await sendMetaConversion({
-      eventName: 'AddPaymentInfo',
-      eventId: paymentInfoEventId,
-      email: formData.email,
-      phone: formData.phone,
-      firstName: formData.name.split(' ')[0],
-      lastName: formData.name.split(' ').slice(1).join(' '),
-      value: currentPlan.price,
-      currency: 'BRL',
-      contentIds: [planType],
-      contentType: 'product',
-      contentName: currentPlan.name,
-    });
+    trackAddPaymentInfo(product, paymentMethod);
     
     try {
       const { data, error } = await supabase.functions.invoke('create-payment', {

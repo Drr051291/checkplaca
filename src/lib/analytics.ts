@@ -109,7 +109,7 @@ export const trackViewItem = (product: ProductData) => {
  * Evento: Início do Checkout
  * Dispara quando usuário inicia o processo de checkout
  */
-export const trackBeginCheckout = (product: ProductData, eventId?: string) => {
+export const trackBeginCheckout = (product: ProductData) => {
   // GA4
   pushToDataLayer({
     event: 'begin_checkout',
@@ -135,8 +135,6 @@ export const trackBeginCheckout = (product: ProductData, eventId?: string) => {
     value: product.price,
     currency: 'BRL',
     num_items: 1,
-  }, {
-    eventID: eventId, // For deduplication with Conversions API
   });
 };
 
@@ -144,7 +142,7 @@ export const trackBeginCheckout = (product: ProductData, eventId?: string) => {
  * Evento: Informações de Pagamento Adicionadas
  * Dispara quando usuário escolhe método de pagamento
  */
-export const trackAddPaymentInfo = (product: ProductData, paymentMethod: string, eventId?: string) => {
+export const trackAddPaymentInfo = (product: ProductData, paymentMethod: string) => {
   // GA4
   pushToDataLayer({
     event: 'add_payment_info',
@@ -162,8 +160,6 @@ export const trackAddPaymentInfo = (product: ProductData, paymentMethod: string,
     content_ids: [product.item_id],
     value: product.price,
     currency: 'BRL',
-  }, {
-    eventID: eventId, // For deduplication with Conversions API
   });
 };
 
@@ -171,7 +167,7 @@ export const trackAddPaymentInfo = (product: ProductData, paymentMethod: string,
  * Evento: Compra Finalizada
  * Dispara quando pagamento é confirmado
  */
-export const trackPurchase = (purchaseData: PurchaseData, eventId?: string) => {
+export const trackPurchase = (purchaseData: PurchaseData) => {
   // GA4 - Enhanced E-commerce
   pushToDataLayer({
     event: 'purchase',
@@ -198,8 +194,6 @@ export const trackPurchase = (purchaseData: PurchaseData, eventId?: string) => {
     value: purchaseData.value,
     currency: purchaseData.currency,
     num_items: purchaseData.items.reduce((sum, item) => sum + item.quantity, 0),
-  }, {
-    eventID: eventId, // For deduplication with Conversions API
   });
 };
 
@@ -207,18 +201,16 @@ export const trackPurchase = (purchaseData: PurchaseData, eventId?: string) => {
  * Evento: Busca de Placa
  * Evento customizado para rastrear buscas
  */
-export const trackSearch = (plate: string, eventId?: string) => {
+export const trackSearch = (plate: string) => {
   // GA4
   pushToDataLayer({
     event: 'search',
     search_term: plate,
   });
 
-  // Meta Pixel - Use Search event with event_id for deduplication
+  // Meta Pixel - Search
   fbq('track', 'Search', {
     search_string: plate,
-  }, {
-    eventID: eventId, // For deduplication with Conversions API
   });
 };
 
@@ -226,7 +218,7 @@ export const trackSearch = (plate: string, eventId?: string) => {
  * Evento: Lead (Formulário preenchido)
  * Dispara quando usuário preenche dados no checkout
  */
-export const trackLead = (email: string, phone?: string, eventId?: string) => {
+export const trackLead = (email: string, phone?: string) => {
   // GA4
   pushToDataLayer({
     event: 'generate_lead',
@@ -236,8 +228,6 @@ export const trackLead = (email: string, phone?: string, eventId?: string) => {
   // Meta Pixel
   fbq('track', 'Lead', {
     content_name: 'Checkout Form',
-  }, {
-    eventID: eventId, // For deduplication with Conversions API
   });
 };
 

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackPurchase, createProductData } from '@/lib/analytics';
-import { sendMetaConversion, generateEventId } from '@/lib/metaConversion';
 
 interface PaymentTrackingOptions {
   reportId: string;
@@ -53,9 +52,7 @@ export const usePaymentTracking = ({ reportId, enabled }: PaymentTrackingOptions
             const planType = payment.plan_type === 'premium' ? 'premium' : 'completo';
             const product = createProductData(planType, plate);
             
-            // Track purchase event with same event_id for deduplication
-            const eventId = generateEventId();
-            
+            // Track purchase event
             trackPurchase({
               transaction_id: payment.asaas_payment_id,
               value: parseFloat(payment.amount),
@@ -64,21 +61,6 @@ export const usePaymentTracking = ({ reportId, enabled }: PaymentTrackingOptions
               customer_email: payment.payment_data?.customer?.email,
               customer_phone: payment.payment_data?.customer?.phone,
               payment_method: payment.payment_method,
-            }, eventId);
-            
-            // Send to Meta Conversions API with same event_id
-            await sendMetaConversion({
-              eventName: 'Purchase',
-              eventId: eventId,
-              email: payment.payment_data?.customer?.email,
-              phone: payment.payment_data?.customer?.phone,
-              firstName: payment.payment_data?.customer?.name?.split(' ')[0],
-              lastName: payment.payment_data?.customer?.name?.split(' ').slice(1).join(' '),
-              value: parseFloat(payment.amount),
-              currency: 'BRL',
-              contentIds: [planType],
-              contentType: 'product',
-              contentName: `Consulta Veicular - Plano ${planType.charAt(0).toUpperCase() + planType.slice(1)}`,
             });
             
             console.log('[usePaymentTracking] Purchase event tracked successfully');
