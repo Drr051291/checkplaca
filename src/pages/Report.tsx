@@ -87,8 +87,25 @@ const Report = () => {
         (payload) => {
           console.log('[Report] Payment updated:', payload);
           const payment = payload.new as any;
-          if (payment.status === 'paid') {
+          if (payment.status === 'paid' && !hasPaidPlan) {
             setHasPaidPlan(true);
+            
+            // Track purchase event for Meta Pixel
+            const planType = payment.plan_type === 'premium' ? 'premium' : 'completo';
+            const value = parseFloat(payment.amount);
+            
+            // Send Purchase event to Meta Pixel
+            if (window.fbq) {
+              window.fbq('track', 'Purchase', {
+                value: value,
+                currency: 'BRL',
+                content_name: `Relatório Veicular ${planType}`,
+                content_type: 'product',
+                content_ids: [reportId],
+              });
+              console.log('[Report] Meta Pixel Purchase event sent:', { value, currency: 'BRL' });
+            }
+            
             toast({
               title: "✅ Pagamento confirmado!",
               description: "Seu relatório completo já está disponível!",

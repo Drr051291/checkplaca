@@ -211,6 +211,23 @@ const Checkout = () => {
 
         if (data.isPaid) {
           setCheckingPayment(true);
+          
+          // Track purchase event for Meta Pixel
+          const planType = paymentData.planType === 'premium' ? 'premium' : 'completo';
+          const value = paymentData.planType === 'premium' ? 39.90 : 19.90;
+          
+          // Send Purchase event to Meta Pixel
+          if (window.fbq) {
+            window.fbq('track', 'Purchase', {
+              value: value,
+              currency: 'BRL',
+              content_name: `Relatório Veicular ${planType}`,
+              content_type: 'product',
+              content_ids: [reportId],
+            });
+            console.log('[Checkout] Meta Pixel Purchase event sent:', { value, currency: 'BRL' });
+          }
+          
           toast({
             title: "🎉 Pagamento confirmado!",
             description: "Redirecionando para o relatório completo...",
