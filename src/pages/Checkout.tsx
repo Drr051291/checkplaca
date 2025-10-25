@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Lock, CheckCircle, Copy, QrCode, CreditCard, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Lock, CheckCircle, Copy, QrCode, CreditCard, RefreshCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
   const [paymentData, setPaymentData] = useState<any>(null);
   const [fetchingPix, setFetchingPix] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -187,6 +188,52 @@ const Checkout = () => {
       fetchPix();
     }
   }, [paymentData, paymentMethod]);
+
+  // Check payment status every 5 seconds if PIX payment is pending
+  useEffect(() => {
+    if (!paymentData?.paymentId || paymentMethod !== 'PIX' || checkingPayment) {
+      return;
+    }
+
+    const checkPaymentStatus = async () => {
+      try {
+        console.log('[Checkout] Verificando status do pagamento...');
+        const { data, error } = await supabase.functions.invoke('check-payment', {
+          body: { paymentId: paymentData.paymentId }
+        });
+
+        if (error) {
+          console.error('[Checkout] Erro ao verificar pagamento:', error);
+          return;
+        }
+
+        console.log('[Checkout] Status do pagamento:', data);
+
+        if (data.isPaid) {
+          setCheckingPayment(true);
+          toast({
+            title: "🎉 Pagamento confirmado!",
+            description: "Redirecionando para o relatório completo...",
+          });
+          
+          // Aguarda 2 segundos antes de redirecionar
+          setTimeout(() => {
+            navigate(`/report?id=${reportId}`);
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('[Checkout] Erro ao verificar status:', error);
+      }
+    };
+
+    // Verifica imediatamente
+    checkPaymentStatus();
+
+    // Depois verifica a cada 5 segundos
+    const interval = setInterval(checkPaymentStatus, 5000);
+
+    return () => clearInterval(interval);
+  }, [paymentData, paymentMethod, reportId, navigate, checkingPayment]);
   if (paymentData) {
     return (
       <div className="min-h-screen bg-background">
@@ -195,6 +242,12 @@ const Checkout = () => {
             <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
               Checkplaca
             </h1>
+            {checkingPayment && paymentMethod === 'PIX' && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-accent">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Verificando pagamento automaticamente...</span>
+              </div>
+            )}
           </div>
         </header>
 
@@ -325,8 +378,16 @@ const Checkout = () => {
                   onClick={() => navigate(`/report?id=${reportId}`)}
                   variant="outline"
                   className="w-full"
+                  disabled={checkingPayment}
                 >
-                  Voltar ao relatório
+                  {checkingPayment ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Redirecionando...
+                    </>
+                  ) : (
+                    'Voltar ao relatório'
+                  )}
                 </Button>
               </CardContent>
             </Card>

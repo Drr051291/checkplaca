@@ -72,6 +72,35 @@ const Report = () => {
     };
 
     fetchReport();
+
+    // Subscribe to payment status changes in realtime
+    const channel = supabase
+      .channel(`payment-status-${reportId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'payments',
+          filter: `report_id=eq.${reportId}`,
+        },
+        (payload) => {
+          console.log('[Report] Payment updated:', payload);
+          const payment = payload.new as any;
+          if (payment.status === 'paid') {
+            setHasPaidPlan(true);
+            toast({
+              title: "✅ Pagamento confirmado!",
+              description: "Seu relatório completo já está disponível!",
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [reportId, navigate, toast]);
 
   const handleDownloadPDF = async () => {
