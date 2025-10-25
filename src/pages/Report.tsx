@@ -259,6 +259,8 @@ const Report = () => {
   const plate = reportData.plate;
   const recalls = reportData.recalls || [];
   const leilao = reportData.leilao || {};
+  const debitos = reportData.debitos || {};
+  const restricoes = reportData.restricoes || {};
   const rawData = reportData.raw?.dados?.informacoes_veiculo || {};
   const dadosLeilao = reportData.raw?.dados?.leilao || {};
   const dadosTecnicos = rawData.dados_tecnicos || {};
@@ -632,6 +634,98 @@ const Report = () => {
             </Card>
           )}
 
+          {/* Debts Section */}
+          <Card className="shadow-soft">
+            <CardHeader className="bg-secondary/50">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-6 h-6 text-primary" />
+                Débitos e Multas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {debitos?.quantidade_total > 0 ? (
+                <div className="space-y-4">
+                  <div className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-semibold text-lg text-destructive">
+                        Total de Débitos: {debitos.quantidade_total}
+                      </div>
+                      {debitos.total_geral > 0 && (
+                        <div className="text-2xl font-bold text-destructive">
+                          R$ {debitos.total_geral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {debitos.ipva?.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <XCircle className="w-5 h-5 text-destructive" />
+                        IPVA ({debitos.ipva.length})
+                      </h4>
+                      {debitos.ipva.map((item: any, idx: number) => (
+                        <div key={idx} className="p-3 bg-secondary/30 rounded-lg">
+                          <div className="grid md:grid-cols-3 gap-2 text-sm">
+                            <div><span className="text-muted-foreground">Ano:</span> {item.ano || 'N/A'}</div>
+                            <div><span className="text-muted-foreground">Valor:</span> R$ {item.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || 'N/A'}</div>
+                            <div><span className="text-muted-foreground">Status:</span> {item.status || 'Pendente'}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {debitos.multas?.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <XCircle className="w-5 h-5 text-destructive" />
+                        Multas ({debitos.multas.length})
+                      </h4>
+                      {debitos.multas.map((item: any, idx: number) => (
+                        <div key={idx} className="p-3 bg-secondary/30 rounded-lg">
+                          <div className="grid md:grid-cols-2 gap-2 text-sm">
+                            <div><span className="text-muted-foreground">Data:</span> {item.data || 'N/A'}</div>
+                            <div><span className="text-muted-foreground">Valor:</span> R$ {item.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || 'N/A'}</div>
+                            <div className="col-span-2"><span className="text-muted-foreground">Infração:</span> {item.descricao || 'N/A'}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {debitos.licenciamento?.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <XCircle className="w-5 h-5 text-destructive" />
+                        Licenciamento ({debitos.licenciamento.length})
+                      </h4>
+                      {debitos.licenciamento.map((item: any, idx: number) => (
+                        <div key={idx} className="p-3 bg-secondary/30 rounded-lg">
+                          <div className="grid md:grid-cols-3 gap-2 text-sm">
+                            <div><span className="text-muted-foreground">Ano:</span> {item.ano || 'N/A'}</div>
+                            <div><span className="text-muted-foreground">Valor:</span> R$ {item.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || 'N/A'}</div>
+                            <div><span className="text-muted-foreground">Status:</span> {item.status || 'Pendente'}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-8 h-8 text-accent" />
+                  <div>
+                    <div className="font-semibold text-lg">Sem débitos pendentes</div>
+                    <div className="text-sm text-muted-foreground">
+                      Não foram encontrados débitos de IPVA, multas ou licenciamento
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Restrictions Section */}
           <Card className="shadow-soft">
             <CardHeader className="bg-secondary/50">
@@ -641,19 +735,71 @@ const Report = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {vehicleInfo?.restricoes && vehicleInfo.restricoes.length > 0 ? (
-                <div className="space-y-3">
-                  {vehicleInfo.restricoes.map((restricao: any, index: number) => (
-                    <div key={index} className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <XCircle className="w-6 h-6 text-destructive flex-shrink-0" />
-                        <div>
-                          <div className="font-semibold">{restricao.tipo || 'Restrição'}</div>
-                          <div className="text-sm text-muted-foreground">{restricao.descricao || 'Detalhes não disponíveis'}</div>
+              {restricoes?.tem_restricoes ? (
+                <div className="space-y-4">
+                  {restricoes.roubo_furto?.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold flex items-center gap-2 text-destructive">
+                        <XCircle className="w-5 h-5" />
+                        Roubo/Furto ({restricoes.roubo_furto.length})
+                      </h4>
+                      {restricoes.roubo_furto.map((item: any, idx: number) => (
+                        <div key={idx} className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
+                          <div className="space-y-1 text-sm">
+                            <div><span className="font-semibold">Data:</span> {item.data || 'N/A'}</div>
+                            <div><span className="font-semibold">Tipo:</span> {item.tipo || 'N/A'}</div>
+                            <div><span className="font-semibold">Status:</span> {item.status || 'N/A'}</div>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+
+                  {restricoes.judiciais?.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold flex items-center gap-2 text-orange-600">
+                        <AlertTriangle className="w-5 h-5" />
+                        Restrições Judiciais ({restricoes.judiciais.length})
+                      </h4>
+                      {restricoes.judiciais.map((item: any, idx: number) => (
+                        <div key={idx} className="p-4 border border-orange-200 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                          <div className="text-sm">{item.descricao || JSON.stringify(item)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {restricoes.administrativas?.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold flex items-center gap-2 text-yellow-600">
+                        <AlertTriangle className="w-5 h-5" />
+                        Restrições Administrativas ({restricoes.administrativas.length})
+                      </h4>
+                      {restricoes.administrativas.map((item: any, idx: number) => (
+                        <div key={idx} className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
+                          <div className="text-sm">{item.descricao || JSON.stringify(item)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {restricoes.alienacao?.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold flex items-center gap-2 text-blue-600">
+                        <FileText className="w-5 h-5" />
+                        Alienação Fiduciária ({restricoes.alienacao.length})
+                      </h4>
+                      {restricoes.alienacao.map((item: any, idx: number) => (
+                        <div key={idx} className="p-4 border border-blue-200 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                          <div className="space-y-1 text-sm">
+                            <div><span className="font-semibold">Credor:</span> {item.credor || 'N/A'}</div>
+                            <div><span className="font-semibold">Contrato:</span> {item.contrato || 'N/A'}</div>
+                            <div><span className="font-semibold">Data:</span> {item.data || 'N/A'}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center gap-3">

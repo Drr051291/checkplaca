@@ -85,7 +85,30 @@ serve(async (req) => {
     const leilao = dados.leilao || {};
     const historicoLeiloes = leilao.historico || [];
     
-    console.log('Dados de leilão encontrados:', JSON.stringify(leilao));
+    // Extrair débitos e multas
+    const debitos = dados.debitos || {};
+    const debitosIPVA = debitos.ipva || [];
+    const debitosLicenciamento = debitos.licenciamento || [];
+    const debitosMultas = debitos.multas || [];
+    const debitosDPVAT = debitos.dpvat || [];
+    
+    // Extrair restrições
+    const restricoes = dados.restricoes || {};
+    const restricoesJudiciais = restricoes.judiciais || [];
+    const restricoesAdministrativas = restricoes.administrativas || [];
+    const restricoesRouboFurto = restricoes.roubo_furto || [];
+    const restricoesAlienacao = restricoes.alienacao || [];
+    
+    // Extrair recalls
+    const recalls = dados.recalls || [];
+    
+    // Extrair histórico de proprietários
+    const historicoProprietarios = dados.historico_proprietarios || {};
+    
+    console.log('Dados de leilão:', JSON.stringify(leilao));
+    console.log('Débitos encontrados:', JSON.stringify(debitos));
+    console.log('Restrições encontradas:', JSON.stringify(restricoes));
+    console.log('Recalls encontrados:', recalls.length);
     
     // Consolidar dados do relatório
     const reportData = {
@@ -106,10 +129,25 @@ serve(async (req) => {
       leilao: {
         tem_historico: historicoLeiloes.length > 0,
         historico: historicoLeiloes,
-        detalhes: leilao.detalhes || null,
+        detalhes: leilao,
       },
-      restricoes: [],
-      recalls: [],
+      debitos: {
+        ipva: debitosIPVA,
+        licenciamento: debitosLicenciamento,
+        multas: debitosMultas,
+        dpvat: debitosDPVAT,
+        total_geral: debitos.total_geral || 0,
+        quantidade_total: (debitosIPVA.length || 0) + (debitosLicenciamento.length || 0) + (debitosMultas.length || 0) + (debitosDPVAT.length || 0),
+      },
+      restricoes: {
+        judiciais: restricoesJudiciais,
+        administrativas: restricoesAdministrativas,
+        roubo_furto: restricoesRouboFurto,
+        alienacao: restricoesAlienacao,
+        tem_restricoes: (restricoesJudiciais.length + restricoesAdministrativas.length + restricoesRouboFurto.length + restricoesAlienacao.length) > 0,
+      },
+      recalls: recalls,
+      historico_proprietarios: historicoProprietarios,
       consultedAt: new Date().toISOString(),
       raw: consultaData,
     };
