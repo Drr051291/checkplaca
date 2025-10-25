@@ -12,47 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    // Get authenticated user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Authentication required');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Invalid authentication');
-    }
-
     const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
     if (!asaasApiKey) {
       throw new Error('ASAAS_API_KEY não configurada');
     }
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { paymentId } = await req.json();
 
-    // Verify user owns the payment
-    const { data: payment, error: paymentError } = await supabase
-      .from('payments')
-      .select('user_id')
-      .eq('asaas_payment_id', paymentId)
-      .single();
-
-    if (paymentError || !payment || payment.user_id !== user.id) {
-      throw new Error('Unauthorized: Payment not found or access denied');
-    }
-
-    console.log('[check-payment] User:', user.id, 'Payment:', paymentId);
+    console.log('[check-payment] Verificando pagamento:', paymentId);
 
     // Busca status no Asaas
     const response = await fetch(

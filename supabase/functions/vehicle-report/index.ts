@@ -1,6 +1,5 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,126 +7,144 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Make authentication optional. If a token is provided, try to read the user; otherwise continue as anonymous
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-
-    let userId: string | null = null;
-    try {
-      const authHeader = req.headers.get('Authorization');
-      if (authHeader) {
-        const supabaseClient = createClient(
-          supabaseUrl,
-          supabaseAnonKey,
-          { global: { headers: { Authorization: authHeader } } }
-        );
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        userId = user?.id ?? null;
-      }
-    } catch (_) {
-      // ignore auth errors to keep the endpoint public
-      userId = null;
-    }
-
     const { plate } = await req.json();
     
-    // Validate Brazilian plate format
-    const cleanPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (cleanPlate.length !== 7) {
-      throw new Error('Placa deve ter 7 caracteres');
-    }
-    
-    // Check for valid Brazilian plate formats (ABC1234 or ABC1D23)
-    const oldFormat = /^[A-Z]{3}[0-9]{4}$/;
-    const mercosulFormat = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
-    if (!oldFormat.test(cleanPlate) && !mercosulFormat.test(cleanPlate)) {
-      throw new Error('Formato de placa inválido. Use ABC1234 ou ABC1D23');
+    if (!plate || plate.length !== 7) {
+      throw new Error('Placa inválida. Deve conter 7 caracteres.');
     }
 
-    console.log('[vehicle-report] Processing request, user:', userId ?? 'anonymous', 'plate:', cleanPlate);
+    console.log('Consultando veículo na API Consultar Placa:', plate);
 
-    const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY');
-    const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL');
-
+    const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY')?.trim();
+    const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL')?.trim();
     if (!apiKey || !apiEmail) {
-      throw new Error('API credentials not configured');
+      throw new Error('Credenciais da Consultar Placa não configuradas (email e api key)');
     }
 
-    const authString = btoa(`${apiEmail}:${apiKey}`);
-    
-    const response = await fetch(
-      `https://api.consultarplaca.com.br/consultas/placa/${cleanPlate}`,
-      {
-        headers: {
-          'Authorization': `Basic ${authString}`,
-        },
-      }
-    );
+    console.log('API Key configurada:', 'Sim');
+    console.log('Email configurado:', 'Sim');
+    console.log('Tamanho da API Key:', apiKey.length);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[vehicle-report] API error:', response.status, errorText);
-      throw new Error(`Erro ao consultar placa: ${response.status}`);
-    }
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const vehicleInfo = await response.json();
+    console.log('Solicitando relatório...');
 
-    const reportData = {
-      basic: {
-        plate: cleanPlate,
-        brand: vehicleInfo?.marca || '',
-        model: vehicleInfo?.modelo || '',
-        year: vehicleInfo?.ano || '',
-        color: vehicleInfo?.cor || '',
+    // Autenticação Basic: email:apiKey (conforme documentação)
+    const credentials = `${apiEmail}:${apiKey}`;
+    // Encode credentials safely even if email has non-ASCII chars
+    const encodedCredentials = btoa(unescape(encodeURIComponent(credentials)));
+    const basicAuth = `Basic ${encodedCredentials}`;
+
+    // Consulta direta por placa
+    console.log('Chamando endpoint consultarPlaca...');
+    const consultaResponse = await fetch(`https://api.consultarplaca.com.br/v2/consultarPlaca?placa=${encodeURIComponent(plate)}` , {
+      method: 'GET',
+      headers: {
+        'Authorization': basicAuth,
+        'Accept': 'application/json',
       },
-      details: vehicleInfo,
+    });
+
+    if (!consultaResponse.ok) {
+      const errorText = await consultaResponse.text();
+      let message = `Erro ao consultar placa: ${consultaResponse.status}`;
+      try {
+        const maybeJson = JSON.parse(errorText);
+        if (maybeJson?.mensagem) message = maybeJson.mensagem;
+        if (maybeJson?.error) message = maybeJson.error;
+      } catch {}
+      console.error('Erro ao consultar placa:', message);
+      return new Response(
+        JSON.stringify({ success: false, error: message }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: consultaResponse.status }
+      );
+    }
+
+    const consultaData = await consultaResponse.json();
+    console.log('Resposta da consulta:', JSON.stringify(consultaData));
+
+    if (consultaData.status !== 'ok') {
+      throw new Error(consultaData.mensagem || 'Erro na consulta de placa');
+    }
+
+    // Extrair dados do veículo conforme estrutura da documentação
+    const dados = consultaData.dados || {};
+    const infoVeiculo = dados.informacoes_veiculo || {};
+    const dadosVeiculo = infoVeiculo.dados_veiculo || {};
+    
+    // Consolidar dados do relatório
+    const reportData = {
+      plate,
+      vehicleInfo: {
+        marca_modelo: dadosVeiculo.marca || dadosVeiculo.marca_modelo || dadosVeiculo.modelo,
+        ano_fabricacao: dadosVeiculo.ano_fabricacao,
+        ano_modelo: dadosVeiculo.ano_modelo,
+        chassi: dadosVeiculo.chassi,
+        placa: dadosVeiculo.placa || plate,
+        renavam: dadosVeiculo.renavam,
+        cor: dadosVeiculo.cor,
+        combustivel: dadosVeiculo.combustivel,
+        categoria: dadosVeiculo.tipo_veiculo || dadosVeiculo.categoria,
+        municipio: dadosVeiculo.municipio,
+        uf: dadosVeiculo.uf_municipio || dadosVeiculo.uf,
+      },
+      restricoes: [],
+      recalls: [],
+      consultedAt: new Date().toISOString(),
+      raw: consultaData,
     };
 
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('Dados consolidados:', JSON.stringify(reportData));
 
-    const { data: report, error: insertError } = await supabase
+    // Salvar no banco de dados
+    const { data: savedReport, error: saveError } = await supabase
       .from('vehicle_reports')
       .insert({
-        plate: cleanPlate,
+        plate,
         report_data: reportData,
-        user_id: userId,
       })
       .select()
       .single();
 
-    if (insertError) {
-      console.error('[vehicle-report] Insert error:', insertError);
-      throw insertError;
+    if (saveError) {
+      console.error('Erro ao salvar relatório:', saveError);
+      throw saveError;
     }
 
-    console.log('[vehicle-report] Report created successfully:', report.id);
+    console.log('Relatório salvo com sucesso:', savedReport.id);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        reportId: report.id,
+      JSON.stringify({ 
+        success: true, 
+        reportId: savedReport.id,
         data: reportData,
       }),
-      {
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       }
     );
-  } catch (error: any) {
-    console.error('[vehicle-report] Error:', error);
+
+  } catch (error) {
+    console.error('Erro ao processar consulta:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
+      JSON.stringify({ 
+        success: false, 
+        error: errorMessage,
       }),
-      {
-        status: 400,
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
     );
   }

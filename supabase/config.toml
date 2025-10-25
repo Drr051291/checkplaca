@@ -4,7 +4,7 @@ project_id = "mixfzygyqfknoqkgsmsz"
 verify_jwt = false
 
 [functions.create-payment]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-payment]
-verify_jwt = true
+verify_jwt = false

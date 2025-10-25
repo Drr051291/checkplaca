@@ -22,30 +22,12 @@ serve(async (req) => {
   }
 
   try {
-    // Get authenticated user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Authentication required');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Invalid authentication');
-    }
-
     const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
     if (!asaasApiKey) {
       throw new Error('ASAAS_API_KEY não configurada');
     }
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -59,18 +41,7 @@ serve(async (req) => {
       paymentMethod,
     }: PaymentRequest = await req.json();
 
-    // Verify user owns the report
-    const { data: report, error: reportError } = await supabase
-      .from('vehicle_reports')
-      .select('user_id')
-      .eq('id', reportId)
-      .single();
-
-    if (reportError || !report || report.user_id !== user.id) {
-      throw new Error('Unauthorized: Report not found or access denied');
-    }
-
-    console.log('[create-payment] User:', user.id, 'Report:', reportId, 'Plan:', planType);
+    console.log('[create-payment] Criando pagamento:', { reportId, planType, paymentMethod });
 
     // Define valores dos planos
     const planValues = {
@@ -205,7 +176,6 @@ serve(async (req) => {
         status: 'pending',
         payment_method: paymentMethod,
         payment_data: paymentData,
-        user_id: user.id,
       });
 
     if (dbError) {
