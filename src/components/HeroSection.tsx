@@ -17,10 +17,13 @@ export const HeroSection = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (plate.length !== 7) {
+    
+    const cleanedPlate = plate.trim().toUpperCase();
+    
+    if (cleanedPlate.length !== 7) {
       toast({
         title: "Placa inválida",
-        description: "Por favor, insira uma placa válida com 7 caracteres.",
+        description: "A placa deve ter exatamente 7 caracteres (ex: ABC1234 ou ABC1D23).",
         variant: "destructive",
       });
       return;
@@ -32,11 +35,16 @@ export const HeroSection = () => {
     trackSearch(plate.toUpperCase());
     
     try {
+      const plateToSearch = cleanedPlate;
+      
       const { data, error } = await supabase.functions.invoke('vehicle-report', {
-        body: { plate: plate.toUpperCase() },
+        body: { plate: plateToSearch },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[HeroSection] Edge function error:', error);
+        throw error;
+      }
 
       if (data.success) {
         toast({
@@ -49,9 +57,16 @@ export const HeroSection = () => {
       }
     } catch (error: any) {
       console.error('[HeroSection] Erro ao consultar veículo:', error);
+      
+      let errorMessage = "Não foi possível consultar o veículo. Tente novamente.";
+      
+      if (error.message?.includes('invalida') || error.message?.includes('formato')) {
+        errorMessage = "Placa inválida. Use o formato: ABC1234 ou ABC1D23";
+      }
+      
       toast({
         title: "Erro na consulta",
-        description: error.message || "Não foi possível consultar o veículo. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -101,12 +116,13 @@ export const HeroSection = () => {
                     <div className="relative group">
                       <Input
                         type="text"
-                        placeholder="Digite a placa"
+                        placeholder="ABC1234"
                         value={plate}
                         onChange={(e) => setPlate(formatPlate(e.target.value))}
-                        className="h-14 sm:h-16 text-lg sm:text-xl font-bold tracking-wider text-center pr-20 sm:pr-28 border-2 focus:border-primary transition-smooth"
+                        className="h-14 sm:h-16 text-lg sm:text-xl font-bold tracking-wider text-center pr-20 sm:pr-28 border-2 focus:border-primary transition-smooth uppercase"
                         maxLength={7}
                         autoFocus
+                        aria-label="Digite a placa do veículo"
                       />
                       <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex gap-0.5 sm:gap-1">
                         {[...Array(7)].map((_, i) => (
