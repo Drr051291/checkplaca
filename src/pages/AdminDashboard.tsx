@@ -1,17 +1,41 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Search, DollarSign, FileText, TrendingUp, Calendar } from "lucide-react";
+import { LogOut, Search, DollarSign, FileText, TrendingUp, Calendar, Eye, CreditCard, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface DashboardStats {
+  totalSearches: number;
+  totalRevenue: number;
+  paidReports: number;
+  conversionRate: number;
+  visitors: number;
+  planBreakdown: { [key: string]: number };
+  paymentMethodBreakdown: { [key: string]: number };
+}
+
+interface RecentSearch {
+  id: string;
+  plate: string;
+  created_at: string;
+  plan_type: string | null;
+  amount: number | null;
+  payment_method: string | null;
+  status: string | null;
+}
 
 const AdminDashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [period, setPeriod] = useState<string>("7");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -67,6 +91,115 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    
+    const fetchDashboardData = async () => {
+      try {
+        const daysAgo = parseInt(period);
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - daysAgo);
+        const startDateStr = startDate.toISOString();
+
+        // Fetch vehicle reports (total searches and visitors)
+        const { data: reports, error: reportsError } = await supabase
+          .from('vehicle_reports')
+          .select('id, created_at, user_id')
+          .gte('created_at', startDateStr);
+
+        if (reportsError) throw reportsError;
+
+        // Fetch payments
+        const { data: payments, error: paymentsError } = await supabase
+          .from('payments')
+          .select('*')
+          .gte('created_at', startDateStr);
+
+        if (paymentsError) throw paymentsError;
+
+        // Calculate statistics
+        const totalSearches = reports?.length || 0;
+        const paidPayments = payments?.filter(p => p.status === 'paid') || [];
+        const paidReports = paidPayments.length;
+        const totalRevenue = paidPayments.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0')), 0);
+        
+        // Calculate unique visitors (unique user_ids)
+        const uniqueUserIds = new Set(reports?.map(r => r.user_id).filter(Boolean));
+        const visitors = uniqueUserIds.size;
+
+        // Calculate conversion rate
+        const conversionRate = totalSearches > 0 
+          ? ((paidReports / totalSearches) * 100).toFixed(1)
+          : "0.0";
+
+        // Plan breakdown
+        const planBreakdown: { [key: string]: number } = {};
+        paidPayments.forEach(p => {
+          const plan = p.plan_type || 'Não especificado';
+          planBreakdown[plan] = (planBreakdown[plan] || 0) + 1;
+        });
+
+        // Payment method breakdown
+        const paymentMethodBreakdown: { [key: string]: number } = {};
+        paidPayments.forEach(p => {
+          const method = p.payment_method || 'Não especificado';
+          paymentMethodBreakdown[method] = (paymentMethodBreakdown[method] || 0) + 1;
+        });
+
+        setStats({
+          totalSearches,
+          totalRevenue,
+          paidReports,
+          conversionRate: parseFloat(conversionRate),
+          visitors,
+          planBreakdown,
+          paymentMethodBreakdown
+        });
+
+        // Fetch recent searches with payment info
+        const { data: recentData, error: recentError } = await supabase
+          .from('vehicle_reports')
+          .select(`
+            id,
+            plate,
+            created_at,
+            payments (
+              plan_type,
+              amount,
+              payment_method,
+              status
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (recentError) throw recentError;
+
+        const formattedSearches: RecentSearch[] = (recentData || []).map((item: any) => ({
+          id: item.id,
+          plate: item.plate,
+          created_at: item.created_at,
+          plan_type: item.payments?.[0]?.plan_type || null,
+          amount: item.payments?.[0]?.amount || null,
+          payment_method: item.payments?.[0]?.payment_method || null,
+          status: item.payments?.[0]?.status || null
+        }));
+
+        setRecentSearches(formattedSearches);
+
+      } catch (error) {
+        console.error('[AdminDashboard] Erro ao buscar dados:', error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os dados do dashboard.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchDashboardData();
+  }, [isAdmin, period, toast]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
@@ -84,22 +217,13 @@ const AdminDashboard = () => {
     );
   }
 
-  // Mock statistics data
-  const stats = {
-    totalSearches: 1247,
-    totalRevenue: 12293.30,
-    freeSearches: 892,
-    paidReports: 355,
-    conversionRate: 28.5
-  };
-
-  const recentSearches = [
-    { id: 1, plate: "ABC1234", date: "2025-01-18 14:32", type: "Pago", value: "R$ 9,90" },
-    { id: 2, plate: "XYZ5678", date: "2025-01-18 14:15", type: "Gratuito", value: "-" },
-    { id: 3, plate: "DEF9012", date: "2025-01-18 13:58", type: "Pago", value: "R$ 9,90" },
-    { id: 4, plate: "GHI3456", date: "2025-01-18 13:42", type: "Gratuito", value: "-" },
-    { id: 5, plate: "JKL7890", date: "2025-01-18 13:21", type: "Pago", value: "R$ 9,90" }
-  ];
+  if (!stats) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando dados...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,25 +252,40 @@ const AdminDashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Dashboard</h2>
-          <p className="text-muted-foreground">Visão geral das consultas e receita</p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Dashboard</h2>
+            <p className="text-muted-foreground">Visão geral das consultas e receita</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Últimos 7 dias</SelectItem>
+                <SelectItem value="30">Últimos 30 dias</SelectItem>
+                <SelectItem value="90">Últimos 90 dias</SelectItem>
+                <SelectItem value="365">Último ano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 mb-8">
           <Card className="shadow-soft hover:shadow-strong transition-smooth">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Consultas
+                Visitantes
               </CardTitle>
-              <Search className="w-5 h-5 text-primary" />
+              <Eye className="w-5 h-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalSearches.toLocaleString('pt-BR')}</div>
+              <div className="text-3xl font-bold">{stats.visitors.toLocaleString('pt-BR')}</div>
               <p className="text-xs text-muted-foreground mt-2">
-                <TrendingUp className="w-3 h-3 inline mr-1" />
-                +12% vs. mês anterior
+                Usuários únicos
               </p>
             </CardContent>
           </Card>
@@ -154,7 +293,22 @@ const AdminDashboard = () => {
           <Card className="shadow-soft hover:shadow-strong transition-smooth">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Receita Total
+                Consultas
+              </CardTitle>
+              <Search className="w-5 h-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.totalSearches.toLocaleString('pt-BR')}</div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Total de buscas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft hover:shadow-strong transition-smooth">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Vendas
               </CardTitle>
               <DollarSign className="w-5 h-5 text-accent" />
             </CardHeader>
@@ -163,23 +317,7 @@ const AdminDashboard = () => {
                 R$ {stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                <TrendingUp className="w-3 h-3 inline mr-1" />
-                +18% vs. mês anterior
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft hover:shadow-strong transition-smooth">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Relatórios Pagos
-              </CardTitle>
-              <FileText className="w-5 h-5 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.paidReports}</div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {stats.freeSearches} consultas gratuitas
+                {stats.paidReports} relatórios
               </p>
             </CardContent>
           </Card>
@@ -196,6 +334,71 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground mt-2">
                 Gratuito → Pago
               </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft hover:shadow-strong transition-smooth">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Plano Popular
+              </CardTitle>
+              <FileText className="w-5 h-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {Object.keys(stats.planBreakdown).length > 0 
+                  ? Object.entries(stats.planBreakdown).sort((a, b) => b[1] - a[1])[0][0]
+                  : 'N/A'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Mais vendido
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Plan and Payment Method Breakdown */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle className="text-lg">Vendas por Plano</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Object.entries(stats.planBreakdown).length > 0 ? (
+                  Object.entries(stats.planBreakdown).map(([plan, count]) => (
+                    <div key={plan} className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{plan}</span>
+                      <Badge variant="secondary">{count}</Badge>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhuma venda no período</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Meios de Pagamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Object.entries(stats.paymentMethodBreakdown).length > 0 ? (
+                  Object.entries(stats.paymentMethodBreakdown).map(([method, count]) => (
+                    <div key={method} className="flex items-center justify-between">
+                      <span className="text-sm font-medium capitalize">{method}</span>
+                      <Badge variant="secondary">{count}</Badge>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhum pagamento no período</p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -236,36 +439,52 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentSearches.map((search) => (
-                    <tr key={search.id} className="border-b border-border hover:bg-secondary/50 transition-smooth">
-                      <td className="py-4 px-4">
-                        <span className="font-mono font-bold tracking-wider">{search.plate}</span>
-                      </td>
-                      <td className="py-4 px-4 text-sm text-muted-foreground">
-                        {search.date}
-                      </td>
-                      <td className="py-4 px-4">
-                        <Badge 
-                          className={search.type === "Pago" 
-                            ? "bg-accent text-accent-foreground" 
-                            : "bg-secondary text-secondary-foreground"
-                          }
-                        >
-                          {search.type}
-                        </Badge>
-                      </td>
-                      <td className="py-4 px-4 text-right font-semibold">
-                        {search.value}
+                  {recentSearches.length > 0 ? (
+                    recentSearches.map((search) => {
+                      const isPaid = search.status === 'paid';
+                      const formattedDate = new Date(search.created_at).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+
+                      return (
+                        <tr key={search.id} className="border-b border-border hover:bg-secondary/50 transition-smooth">
+                          <td className="py-4 px-4">
+                            <span className="font-mono font-bold tracking-wider">{search.plate}</span>
+                          </td>
+                          <td className="py-4 px-4 text-sm text-muted-foreground">
+                            {formattedDate}
+                          </td>
+                          <td className="py-4 px-4">
+                            <Badge 
+                              className={isPaid
+                                ? "bg-accent text-accent-foreground" 
+                                : "bg-secondary text-secondary-foreground"
+                              }
+                            >
+                              {isPaid ? search.plan_type || 'Pago' : 'Gratuito'}
+                            </Badge>
+                          </td>
+                          <td className="py-4 px-4 text-right font-semibold">
+                            {isPaid && search.amount 
+                              ? `R$ ${parseFloat(search.amount.toString()).toFixed(2)}`
+                              : '-'}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                        Nenhuma consulta registrada
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
-            </div>
-            <div className="mt-6 flex justify-center">
-              <Button variant="outline">
-                Carregar mais
-              </Button>
             </div>
           </CardContent>
         </Card>
