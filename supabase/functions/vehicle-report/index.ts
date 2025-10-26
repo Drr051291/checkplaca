@@ -152,15 +152,9 @@ serve(async (req) => {
     // SE TEM PLANTYPE, faz consulta completa via protocolo
     console.log('Fazendo consulta completa via protocolo...');
     
-    // Mapear planos para tipos de consulta da API
-    const planTypeMap: Record<string, string> = {
-      'basico': 'bronze',
-      'completo': 'ouro',
-      'premium': 'diamante'
-    };
-
-    const tipoConsulta = planTypeMap[planType] || 'ouro';
-    console.log('Tipo de consulta mapeado:', tipoConsulta);
+    // Para relatório completo, sempre usar plano ouro
+    const tipoConsulta = 'ouro';
+    console.log('Tipo de consulta: ouro (relatório completo)');
 
     // PASSO 1: Solicitar relatório via POST
     console.log('Solicitando relatório...');

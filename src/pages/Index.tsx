@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HeroSection } from "@/components/HeroSection";
-import { PlansSection } from "@/components/PlansSection";
 import { ReportExampleSection } from "@/components/ReportExampleSection";
 import { IncludedSection } from "@/components/IncludedSection";
 
@@ -38,16 +37,6 @@ const Index = () => {
               >
                 Ver exemplo
               </a>
-              <a 
-                href="#planos" 
-                className="hidden sm:inline text-sm font-medium hover:text-primary transition-smooth"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                Planos
-              </a>
             </nav>
           </div>
         </div>
@@ -64,17 +53,14 @@ const Index = () => {
         <ReportExampleSection />
       </div>
 
-      {/* Plans Section */}
-      <PlansSection />
-
       {/* CTA Section */}
       <section className="py-12 sm:py-16 md:py-20 bg-gradient-hero text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
           <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
-            Faça sua consulta agora mesmo
+            Consulte seu veículo agora
           </h3>
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 opacity-90 max-w-2xl mx-auto px-4">
-            Descubra o histórico completo do veículo em segundos. Comece com uma consulta básica gratuita.
+            Busca básica gratuita ou relatório completo por apenas R$ 39,90
           </p>
           <Button 
             size="lg"
