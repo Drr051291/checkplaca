@@ -434,17 +434,16 @@ const Report = () => {
                       </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                      {/* Plano Completo */}
-                      <Card className="relative overflow-hidden hover:shadow-strong transition-smooth bg-background">
+                    <div className="max-w-xl mx-auto">
+                      <Card className="relative overflow-hidden hover:shadow-strong transition-smooth bg-background border-2 border-primary/30">
                         <CardHeader className="text-center pb-4">
                           <div className="mb-4">
-                            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Sparkles className="w-6 h-6 text-primary" />
+                            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Sparkles className="w-8 h-8 text-primary" />
                             </div>
                             <CardTitle className="text-2xl mb-2">Relatório Completo</CardTitle>
-                            <div className="text-4xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-                              R$ 19,90
+                            <div className="text-5xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
+                              R$ 39,90
                             </div>
                           </div>
                         </CardHeader>
@@ -456,11 +455,11 @@ const Report = () => {
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Histórico de sinistros</span>
+                              <span className="text-sm">Histórico de sinistros e colisões</span>
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Débitos e multas</span>
+                              <span className="text-sm">Débitos e multas completos</span>
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
@@ -468,74 +467,29 @@ const Report = () => {
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Download em PDF</span>
+                              <span className="text-sm">Histórico de leilão e salvados</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span className="text-sm">Rastreamento de roubo e furto</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span className="text-sm">Download em PDF profissional</span>
                             </li>
                           </ul>
                           <Button 
-                            className="w-full h-12 gradient-primary font-semibold hover:shadow-glow transition-all"
-                            onClick={() => navigate(`/checkout?reportId=${reportId}&plan=completo&plate=${plate}`)}
+                            className="w-full h-14 gradient-primary font-semibold text-base hover:shadow-glow transition-all"
+                            onClick={() => {
+                              trackViewItem(createProductData('premium', reportId));
+                              navigate(`/checkout?reportId=${reportId}&plan=premium&plate=${plate}`);
+                            }}
                           >
                             Comprar Agora
                           </Button>
                         </CardContent>
                       </Card>
 
-                      {/* Plano Premium */}
-                      <Card className="relative overflow-hidden border-2 border-accent/40 hover:shadow-strong transition-smooth bg-gradient-to-br from-accent/5 to-accent/10">
-                        <div className="absolute top-4 right-4 z-10">
-                          <Badge className="bg-white text-accent font-semibold shadow-soft px-4 py-1.5">
-                            Mais Popular
-                          </Badge>
-                        </div>
-                        <CardHeader className="relative overflow-hidden text-center pb-6 pt-8 bg-gradient-to-br from-accent via-accent to-accent-glow">
-                          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
-                          <div className="relative z-10">
-                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/25 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-lg">
-                              <Crown className="w-8 h-8 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]" />
-                            </div>
-                            <CardTitle className="text-3xl mb-3 text-white font-display font-bold tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
-                              Premium Plus
-                            </CardTitle>
-                            <div className="text-5xl font-display font-black text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.3)] tracking-tight">
-                              R$ 39,90
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="px-6 pb-6 pt-6 bg-background">
-                          <ul className="space-y-3 mb-8">
-                            <li className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm font-semibold">Tudo do plano Completo</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Histórico de leilão</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Rastreamento de roubo</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Análise de mercado</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Suporte prioritário</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Validade de 30 dias</span>
-                            </li>
-                          </ul>
-                          <Button 
-                            className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-semibold shadow-soft hover:shadow-strong transition-all"
-                            onClick={() => navigate(`/checkout?reportId=${reportId}&plan=premium&plate=${plate}`)}
-                          >
-                            Comprar Agora
-                          </Button>
-                        </CardContent>
-                      </Card>
                     </div>
 
                     <p className="text-sm text-muted-foreground">
