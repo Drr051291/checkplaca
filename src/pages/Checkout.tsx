@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Lock, CheckCircle, Copy, QrCode, CreditCard, RefreshCcw, Loader2 } from "lucide-react";
+import { ArrowLeft, Lock, CheckCircle, Copy, QrCode, RefreshCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +22,7 @@ const Checkout = () => {
   const plate = searchParams.get('plate') || '';
   
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
+  const paymentMethod = 'PIX'; // Apenas PIX disponível
   const [paymentData, setPaymentData] = useState<any>(null);
   const [fetchingPix, setFetchingPix] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(false);
@@ -31,10 +31,6 @@ const Checkout = () => {
     email: '',
     phone: '',
     cpf: '',
-    cardNumber: '',
-    cardName: '',
-    cardExpiry: '',
-    cardCvv: '',
   });
 
   const planDetails = {
@@ -92,21 +88,6 @@ const Checkout = () => {
       .replace(/(-\d{4})\d+?$/, '$1');
   };
 
-  const formatCardNumber = (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{4})(\d)/, '$1 $2')
-      .replace(/(\d{4})(\d)/, '$1 $2')
-      .replace(/(\d{4})(\d)/, '$1 $2')
-      .replace(/(\d{4})\d+?$/, '$1');
-  };
-
-  const formatCardExpiry = (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{2})(\d)/, '$1/$2')
-      .replace(/(\/\d{2})\d+?$/, '$1');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,17 +99,6 @@ const Checkout = () => {
         variant: "destructive",
       });
       return;
-    }
-
-    if (paymentMethod === 'CREDIT_CARD') {
-      if (!formData.cardNumber || !formData.cardName || !formData.cardExpiry || !formData.cardCvv) {
-        toast({
-          title: "Dados do cartão incompletos",
-          description: "Por favor, preencha todos os dados do cartão.",
-          variant: "destructive",
-        });
-        return;
-      }
     }
 
     setIsProcessing(true);
@@ -148,26 +118,8 @@ const Checkout = () => {
         customerEmail: formData.email,
         customerPhone: formData.phone.replace(/\D/g, ''),
         customerCpf: formData.cpf.replace(/\D/g, ''),
-        paymentMethod,
+        paymentMethod: 'PIX',
       };
-
-      // Adiciona dados do cartão se for pagamento com cartão
-      if (paymentMethod === 'CREDIT_CARD') {
-        const [expiryMonth, expiryYear] = formData.cardExpiry.split('/');
-        requestBody.creditCard = {
-          holderName: formData.cardName,
-          number: formData.cardNumber.replace(/\s/g, ''),
-          expiryMonth,
-          expiryYear: `20${expiryYear}`,
-          ccv: formData.cardCvv,
-        };
-        requestBody.creditCardHolderInfo = {
-          name: formData.name,
-          email: formData.email,
-          cpfCnpj: formData.cpf.replace(/\D/g, ''),
-          phone: formData.phone.replace(/\D/g, ''),
-        };
-      }
 
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: requestBody,
@@ -205,16 +157,12 @@ const Checkout = () => {
       if (data.success) {
         setPaymentData(data);
         
-        // Track PIX generation if payment method is PIX
-        if (paymentMethod === 'PIX') {
-          trackPixGenerated(currentPlan.price, data.paymentId);
-        }
+        // Track PIX generation
+        trackPixGenerated(currentPlan.price, data.paymentId);
 
         toast({
           title: "Pagamento gerado!",
-          description: paymentMethod === 'CREDIT_CARD' 
-            ? "Processando pagamento com cartão..." 
-            : "Complete o pagamento para liberar seu relatório.",
+          description: "Complete o pagamento PIX para liberar seu relatório.",
         });
       } else {
         toast({
@@ -443,28 +391,6 @@ const Checkout = () => {
                   </div>
                 )}
 
-                {paymentMethod === 'CREDIT_CARD' && (
-                  <div className="space-y-4">
-                    <div className="text-center mb-4">
-                      <CreditCard className="w-16 h-16 mx-auto text-primary mb-2" />
-                      <p className="text-lg font-semibold mb-2">
-                        Processando Pagamento com Cartão
-                      </p>
-                      <p className="text-muted-foreground">
-                        Aguardando confirmação do pagamento
-                      </p>
-                    </div>
-
-                    <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
-                      <div className="flex items-center justify-center gap-3">
-                        <Loader2 className="w-5 h-5 animate-spin text-accent" />
-                        <p className="text-sm text-center font-medium">
-                          Verificando automaticamente... Não feche esta página.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="bg-secondary/20 rounded-lg p-6 space-y-3">
                   <div className="flex justify-between items-center">
@@ -606,96 +532,17 @@ const Checkout = () => {
                     <div className="space-y-4">
                       <h3 className="font-semibold text-lg">Forma de Pagamento</h3>
                       
-                      <Tabs value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'PIX' | 'CREDIT_CARD')}>
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="PIX" className="flex items-center gap-2">
-                            <QrCode className="w-4 h-4" />
-                            PIX
-                          </TabsTrigger>
-                          <TabsTrigger value="CREDIT_CARD" className="flex items-center gap-2">
-                            <CreditCard className="w-4 h-4" />
-                            Cartão de Crédito
-                          </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="PIX" className="mt-4">
-                          <div className="bg-secondary/20 rounded-lg p-4 space-y-2">
-                            <div className="flex items-start gap-3">
-                              <QrCode className="w-5 h-5 text-primary mt-0.5" />
-                              <div>
-                                <p className="font-semibold">Pagamento via PIX</p>
-                                <p className="text-sm text-muted-foreground">
-                                  Aprovação instantânea. Escaneie o QR Code ou use o PIX Copia e Cola.
-                                </p>
-                              </div>
-                            </div>
+                      <div className="bg-secondary/20 rounded-lg p-4 space-y-2">
+                        <div className="flex items-start gap-3">
+                          <QrCode className="w-5 h-5 text-primary mt-0.5" />
+                          <div>
+                            <p className="font-semibold">Pagamento via PIX</p>
+                            <p className="text-sm text-muted-foreground">
+                              Aprovação instantânea. Escaneie o QR Code ou use o PIX Copia e Cola.
+                            </p>
                           </div>
-                        </TabsContent>
-
-                        <TabsContent value="CREDIT_CARD" className="mt-4">
-                          <div className="space-y-4">
-                            <div className="bg-secondary/20 rounded-lg p-4 mb-4">
-                              <div className="flex items-start gap-3">
-                                <CreditCard className="w-5 h-5 text-primary mt-0.5" />
-                                <div>
-                                  <p className="font-semibold">Cartão de Crédito</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Pagamento seguro e processado diretamente no site.
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <Label htmlFor="cardNumber">Número do Cartão</Label>
-                              <Input
-                                id="cardNumber"
-                                type="text"
-                                value={formData.cardNumber}
-                                onChange={(e) => handleInputChange('cardNumber', formatCardNumber(e.target.value))}
-                                placeholder="0000 0000 0000 0000"
-                                maxLength={19}
-                              />
-                            </div>
-
-                            <div>
-                              <Label htmlFor="cardName">Nome no Cartão</Label>
-                              <Input
-                                id="cardName"
-                                type="text"
-                                value={formData.cardName}
-                                onChange={(e) => handleInputChange('cardName', e.target.value.toUpperCase())}
-                                placeholder="NOME COMO NO CARTÃO"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="cardExpiry">Validade</Label>
-                                <Input
-                                  id="cardExpiry"
-                                  type="text"
-                                  value={formData.cardExpiry}
-                                  onChange={(e) => handleInputChange('cardExpiry', formatCardExpiry(e.target.value))}
-                                  placeholder="MM/AA"
-                                  maxLength={5}
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="cardCvv">CVV</Label>
-                                <Input
-                                  id="cardCvv"
-                                  type="text"
-                                  value={formData.cardCvv}
-                                  onChange={(e) => handleInputChange('cardCvv', e.target.value.replace(/\D/g, ''))}
-                                  placeholder="000"
-                                  maxLength={4}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </TabsContent>
-                      </Tabs>
+                        </div>
+                      </div>
                     </div>
 
                     <Button
@@ -712,7 +559,7 @@ const Checkout = () => {
                       ) : (
                         <>
                           <Lock className="mr-2 h-5 w-5" />
-                          {paymentMethod === 'PIX' ? 'Gerar PIX' : 'Pagar com Cartão'}
+                          Gerar PIX
                         </>
                       )}
                     </Button>
