@@ -152,9 +152,9 @@ serve(async (req) => {
     // SE TEM PLANTYPE, faz consulta completa via protocolo
     console.log('Fazendo consulta completa via protocolo...');
     
-    // Para relatório completo, sempre usar plano ouro
-    const tipoConsulta = 'ouro';
-    console.log('Tipo de consulta: ouro (relatório completo)');
+    // Para relatório completo (R$ 39,90), usar plano bronze
+    const tipoConsulta = 'bronze';
+    console.log('Tipo de consulta: bronze (relatório completo - R$ 39,90)');
 
     // PASSO 1: Solicitar relatório via POST
     console.log('Solicitando relatório...');
