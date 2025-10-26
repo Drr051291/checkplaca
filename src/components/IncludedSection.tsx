@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 
 export const IncludedSection = () => {
   const benefits = [
-    { text: "Histórico completo de débitos e multas", highlight: false },
-    { text: "Verificação de sinistros e colisões", highlight: true },
-    { text: "Consulta de restrições e alienações", highlight: false },
-    { text: "Situação de IPVA e licenciamento", highlight: false },
-    { text: "Histórico de recalls do fabricante", highlight: true },
-    { text: "Relatório profissional em PDF", highlight: false },
-    { text: "Especificações técnicas completas", highlight: false },
-    { text: "Verificação de leilão e salvados", highlight: true }
+    { text: "Verificação de chassi remarcado", highlight: true },
+    { text: "Status de baixa no Detran", highlight: true },
+    { text: "Dados completos do veículo", highlight: false },
+    { text: "Informações técnicas detalhadas", highlight: false },
+    { text: "Dados de carga e capacidade", highlight: false },
+    { text: "Informações de órgãos oficiais", highlight: true },
+    { text: "Registro de débitos (RENAINF)", highlight: true },
+    { text: "Relatório profissional em PDF", highlight: false }
   ];
 
   return (
