@@ -13,7 +13,6 @@ import { trackSearch } from "@/lib/analytics";
 
 export const HeroSection = () => {
   const [plate, setPlate] = useState("");
-  const [planType, setPlanType] = useState<'basico' | 'premium'>('basico');
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -38,14 +37,8 @@ export const HeroSection = () => {
     trackSearch(plate.toUpperCase());
     
     try {
-      // Se for premium, envia planType, senão não envia (consulta grátis)
-      const requestBody: any = { plate: cleanedPlate };
-      if (planType === 'premium') {
-        requestBody.planType = planType;
-      }
-      
       const { data, error } = await supabase.functions.invoke('vehicle-report', {
-        body: requestBody,
+        body: { plate: cleanedPlate },
       });
 
       if (error) {
@@ -143,27 +136,6 @@ export const HeroSection = () => {
                       </div>
                     </div>
 
-                    {/* Plan Selection */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold">Escolha o tipo de relatório:</Label>
-                      <RadioGroup value={planType} onValueChange={(value: any) => setPlanType(value)} className="flex flex-col gap-2">
-                        <div className={`flex items-center space-x-2 p-3 rounded-lg border-2 cursor-pointer transition-smooth ${planType === 'basico' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setPlanType('basico')}>
-                          <RadioGroupItem value="basico" id="basico" />
-                          <Label htmlFor="basico" className="flex-1 cursor-pointer">
-                            <div className="font-semibold">Básico - Grátis</div>
-                            <div className="text-xs text-muted-foreground">Dados básicos do veículo</div>
-                          </Label>
-                        </div>
-                        <div className={`flex items-center space-x-2 p-3 rounded-lg border-2 cursor-pointer transition-smooth ${planType === 'premium' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setPlanType('premium')}>
-                          <RadioGroupItem value="premium" id="premium" />
-                          <Label htmlFor="premium" className="flex-1 cursor-pointer">
-                            <div className="font-semibold">Premium - R$ 39,90</div>
-                            <div className="text-xs text-muted-foreground">Relatório completo: leilão, sinistros, débitos e histórico</div>
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
                     <Button
                       type="submit" 
                       size="lg"
@@ -179,7 +151,7 @@ export const HeroSection = () => {
                       ) : (
                         <>
                           <Search className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
-                          <span className="hidden sm:inline">{planType === 'premium' ? 'Gerar Relatório Premium' : 'Consultar Veículo Grátis'}</span>
+                          <span className="hidden sm:inline">Consultar Veículo Grátis</span>
                           <span className="sm:hidden">Consultar</span>
                         </>
                       )}
@@ -187,7 +159,7 @@ export const HeroSection = () => {
                   </div>
                   
                   <p className="text-xs sm:text-sm text-muted-foreground text-center">
-                    {planType === 'premium' ? '✓ Teste sem pagamento • ✓ Relatório completo' : '✓ Consulta gratuita • ✓ Resultado instantâneo'}
+                    ✓ Consulta gratuita • ✓ Resultado instantâneo
                   </p>
                 </form>
               </CardContent>
