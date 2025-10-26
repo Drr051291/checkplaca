@@ -58,6 +58,43 @@ const Report = () => {
         if (accessResult?.hasAccess) {
           setHasPaidPlan(true);
           setPlanType(accessResult.planType || 'completo');
+          
+          // Se pagou mas o relatório não tem dados completos, re-gera
+          const currentData = data.report_data as any;
+          if (!currentData?.debitos || !currentData?.renainf || !currentData?.restricoes) {
+            console.log('[Report] Relatório pago mas dados incompletos, re-gerando...');
+            
+            toast({
+              title: "Gerando relatório completo",
+              description: "Buscando informações detalhadas do veículo...",
+            });
+            
+            const plate = currentData?.plate;
+            if (plate) {
+              const { data: newReportData, error: reportError } = await supabase.functions.invoke('vehicle-report', {
+                body: { 
+                  plate,
+                  planType: accessResult.planType || 'completo'
+                }
+              });
+              
+              if (!reportError && newReportData?.success) {
+                // Atualiza o relatório no banco
+                const { error: updateError } = await supabase
+                  .from('vehicle_reports')
+                  .update({ report_data: newReportData.data })
+                  .eq('id', reportId);
+                
+                if (!updateError) {
+                  setReportData(newReportData.data);
+                  toast({
+                    title: "Relatório atualizado!",
+                    description: "Todas as informações foram carregadas com sucesso.",
+                  });
+                }
+              }
+            }
+          }
         } else {
           // Fallback: tentativa via consulta direta (quando RLS permitir)
           const { data: paymentData } = await supabase
@@ -97,13 +134,42 @@ const Report = () => {
           table: 'payments',
           filter: `report_id=eq.${reportId}`,
         },
-        (payload) => {
+        async (payload) => {
           console.log('[Report] Payment change detected:', payload);
           const payment = payload.new as any;
           if (payment?.status === 'paid') {
-            console.log('[Report] Payment confirmed, unlocking report');
+            console.log('[Report] Payment confirmed, re-generating complete report');
             setHasPaidPlan(true);
             setPlanType(payment.plan_type || 'completo');
+            
+            // Re-gera o relatório com dados completos
+            const currentPlate = (reportData as any)?.plate;
+            if (currentPlate) {
+              console.log('[Report] Re-generating report for plate:', currentPlate);
+              
+              const { data: newReportData, error: reportError } = await supabase.functions.invoke('vehicle-report', {
+                body: { 
+                  plate: currentPlate,
+                  planType: payment.plan_type || 'completo'
+                }
+              });
+              
+              if (!reportError && newReportData?.success) {
+                console.log('[Report] New report generated successfully');
+                
+                // Atualiza o relatório no banco
+                const { error: updateError } = await supabase
+                  .from('vehicle_reports')
+                  .update({ report_data: newReportData.data })
+                  .eq('id', reportId);
+                
+                if (!updateError) {
+                  setReportData(newReportData.data);
+                }
+              } else {
+                console.error('[Report] Error generating new report:', reportError);
+              }
+            }
             
             // Track purchase event for GA4 and Meta Pixel
             const planType = payment.plan_type === 'premium' ? 'premium' : 'completo';
@@ -133,7 +199,7 @@ const Report = () => {
             
             toast({
               title: "✅ Pagamento confirmado!",
-              description: "Seu relatório completo já está disponível!",
+              description: "Gerando relatório completo com todas as informações...",
             });
           }
         }
