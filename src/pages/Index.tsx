@@ -71,7 +71,7 @@ const Index = () => {
             Consultar placa gratuitamente
           </Button>
           <p className="text-xs sm:text-sm mt-3 sm:mt-4 opacity-75">
-            ✓ Sem cadastro ✓ Resultado imediato ✓ Dados oficiais do DETRAN
+            ✓ Sem cadastro ✓ Resultado imediato ✓ Dados públicos disponíveis
           </p>
         </div>
       </section>
@@ -85,7 +85,7 @@ const Index = () => {
                 Checkplaca
               </h4>
               <p className="text-sm text-muted-foreground">
-                Consulta veicular profissional com dados oficiais do DETRAN. Relatórios completos para compra segura de veículos usados.
+                Consulta veicular com dados públicos disponíveis. Relatórios completos para compra segura de veículos usados.
               </p>
             </div>
             <div>
@@ -116,7 +116,7 @@ const Index = () => {
           <div className="border-t border-border pt-8 mt-8 text-center text-sm text-muted-foreground">
             <p className="mb-2">© 2024 Checkplaca. Todos os direitos reservados.</p>
             <p className="text-xs">
-              Os dados fornecidos são obtidos de fontes oficiais e públicas. A Checkplaca não se responsabiliza por eventuais inconsistências nas bases de dados consultadas.
+              Os dados fornecidos são obtidos de fontes públicas disponíveis. A Checkplaca é um serviço independente que não possui vínculo ou autorização de órgãos governamentais. Não nos responsabilizamos por eventuais inconsistências nas bases de dados consultadas.
             </p>
           </div>
         </div>

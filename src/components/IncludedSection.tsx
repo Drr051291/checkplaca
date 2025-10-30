@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 
 export const IncludedSection = () => {
   const benefits = [
-    { text: "Verificação de chassi remarcado", highlight: true },
-    { text: "Status de baixa no Detran", highlight: true },
+    { text: "Verificação de possível remarcação de chassi", highlight: true },
+    { text: "Status de circulação do veículo", highlight: true },
     { text: "Dados completos do veículo", highlight: false },
     { text: "Informações técnicas detalhadas", highlight: false },
     { text: "Dados de carga e capacidade", highlight: false },
-    { text: "Informações de órgãos oficiais", highlight: true },
+    { text: "Consulta de dados públicos disponíveis", highlight: true },
     { text: "Registro de débitos (RENAINF)", highlight: true },
     { text: "Relatório profissional em PDF", highlight: false }
   ];

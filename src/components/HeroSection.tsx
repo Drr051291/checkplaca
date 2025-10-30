@@ -103,7 +103,7 @@ export const HeroSection = () => {
               </span>
             </h1>
             <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto font-medium">
-              Dados oficiais do DETRAN • Resultado em segundos • Sem cadastro
+              Dados públicos disponíveis • Resultado em segundos • Sem cadastro
             </p>
           </div>
 
@@ -178,7 +178,7 @@ export const HeroSection = () => {
               <div className="p-1.5 sm:p-2 rounded-full bg-accent/10 group-hover:bg-accent/20 transition-smooth">
                 <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
               </div>
-              <span className="font-semibold">Dados Oficiais</span>
+              <span className="font-semibold">Dados Públicos</span>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 group">
               <div className="p-1.5 sm:p-2 rounded-full bg-accent/10 group-hover:bg-accent/20 transition-smooth">

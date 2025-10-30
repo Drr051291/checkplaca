@@ -151,7 +151,7 @@ export const ReportExampleSection = () => {
                 <CardHeader className="bg-primary/5">
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="w-5 h-5" />
-                    Situação DETRAN
+                    Situação do Veículo
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
