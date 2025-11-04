@@ -152,15 +152,19 @@ serve(async (req) => {
     // SE TEM PLANTYPE, faz consulta completa via protocolo
     console.log('Fazendo consulta completa via protocolo...');
     
-    // Para relatório completo (R$ 39,90), usar plano bronze
-    const tipoConsulta = 'bronze';
-    console.log('Tipo de consulta: bronze (relatório completo - R$ 39,90)');
+    // Para relatório completo (R$ 39,90), usar consulta personalizada com:
+    // 12 = FIPE, 4 = Roubo/Furto, 3 = Leilão PRIME, 5 = Gravames (RENAJUD)
+    const tipoConsulta = 'personalizada';
+    const informacoesAdicionais = '12,4,3,5';
+    console.log('Tipo de consulta: personalizada (relatório completo - R$ 39,90)');
+    console.log('Informações adicionais:', informacoesAdicionais);
 
     // PASSO 1: Solicitar relatório via POST
     console.log('Solicitando relatório...');
     const formData = new FormData();
     formData.append('placa', plate);
     formData.append('tipo_consulta', tipoConsulta);
+    formData.append('informacoes_adicionais', informacoesAdicionais);
 
     const solicitacaoResponse = await fetch('https://api.consultarplaca.com.br/v2/solicitarRelatorio', {
       method: 'POST',

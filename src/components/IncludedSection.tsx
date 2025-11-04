@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 
 export const IncludedSection = () => {
   const benefits = [
-    { text: "Verificação de possível remarcação de chassi", highlight: true },
-    { text: "Status de circulação do veículo", highlight: true },
-    { text: "Dados completos do veículo", highlight: false },
+    { text: "Dados básicos do veículo completos", highlight: false },
+    { text: "Tabela FIPE - valor de mercado atualizado", highlight: true },
+    { text: "Histórico de roubo e furto", highlight: true },
+    { text: "Histórico de leilão e uso anterior", highlight: true },
+    { text: "Gravames - restrições financeiras (RENAJUD)", highlight: true },
     { text: "Informações técnicas detalhadas", highlight: false },
-    { text: "Dados de carga e capacidade", highlight: false },
-    { text: "Consulta de dados públicos disponíveis", highlight: true },
-    { text: "Registro de débitos (RENAINF)", highlight: true },
-    { text: "Relatório profissional em PDF", highlight: false }
+    { text: "Verificação de situação do veículo", highlight: false },
+    { text: "Relatório profissional completo", highlight: false }
   ];
 
   return (
