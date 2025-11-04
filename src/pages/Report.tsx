@@ -216,29 +216,47 @@ const Report = () => {
     
     setGenerating(true);
     try {
+      // Captura com alta qualidade
       const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
+        scale: 3, // Maior qualidade
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: 1200,
+        width: 1200
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.95); // JPEG com 95% qualidade
+      
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
+        compress: true
       });
       
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = 297; // A4 height in mm
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      // Calcula quantas páginas são necessárias
+      const totalPages = Math.ceil(imgHeight / pdfHeight);
+      
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+          pdf.addPage();
+        }
+        
+        const yOffset = -page * pdfHeight;
+        pdf.addImage(imgData, 'JPEG', 0, yOffset, imgWidth, imgHeight);
+      }
+      
       pdf.save(`relatorio-${plate}-${new Date().getTime()}.pdf`);
       
       toast({
         title: "PDF baixado com sucesso!",
-        description: "O relatório foi salvo no seu dispositivo",
+        description: `O relatório foi salvo com ${totalPages} página(s)`,
       });
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
@@ -258,27 +276,29 @@ const Report = () => {
     setGenerating(true);
     try {
       const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
+        scale: 3, // Alta qualidade
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: 1200,
+        width: 1200
       });
       
       canvas.toBlob((blob) => {
         if (blob) {
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.download = `relatorio-${plate}-${new Date().getTime()}.png`;
+          link.download = `relatorio-${plate}-${new Date().getTime()}.jpg`;
           link.href = url;
           link.click();
           URL.revokeObjectURL(url);
           
           toast({
             title: "Imagem baixada com sucesso!",
-            description: "O relatório foi salvo como imagem",
+            description: "O relatório foi salvo como imagem de alta qualidade",
           });
         }
-      });
+      }, 'image/jpeg', 0.95); // JPEG 95% qualidade
     } catch (error) {
       console.error('Erro ao gerar imagem:', error);
       toast({
@@ -294,21 +314,84 @@ const Report = () => {
   const handleShareWhatsApp = async () => {
     if (!reportRef.current) return;
     
-    const vehicleName = vehicleInfo?.marca_modelo || rawData?.dados_veiculo?.modelo || 'Veículo';
-    const message = `🚗 *Relatório de Veículo - Checkplaca*\n\n` +
-      `📋 Placa: *${plate}*\n` +
-      `🚘 ${vehicleName}\n` +
-      `📅 Ano: ${vehicleInfo?.ano_fabricacao}/${vehicleInfo?.ano_modelo}\n\n` +
-      `✅ Consulta realizada com sucesso!\n` +
-      `🔍 Acesse: ${window.location.origin}`;
+    setGenerating(true);
     
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-    
-    toast({
-      title: "Compartilhar no WhatsApp",
-      description: "Abrindo WhatsApp para compartilhar...",
-    });
+    try {
+      // Gera a imagem do relatório
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1200,
+        width: 1200
+      });
+      
+      // Converte para blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          resolve(blob!);
+        }, 'image/jpeg', 0.95);
+      });
+      
+      const vehicleName = vehicleInfo?.marca_modelo || rawData?.dados_veiculo?.modelo || 'Veículo';
+      const fileName = `relatorio-${plate}-${new Date().getTime()}.jpg`;
+      
+      // Verifica se o navegador suporta Web Share API com arquivos
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
+        const shareData = {
+          title: 'Relatório de Veículo - Checkplaca',
+          text: `🚗 Relatório do veículo ${vehicleName}\n📋 Placa: ${plate}`,
+          files: [file]
+        };
+        
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          toast({
+            title: "Compartilhado com sucesso!",
+            description: "Relatório compartilhado",
+          });
+          setGenerating(false);
+          return;
+        }
+      }
+      
+      // Fallback: Baixa a imagem e abre WhatsApp com mensagem
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      // Abre WhatsApp com mensagem
+      setTimeout(() => {
+        const message = `🚗 *Relatório de Veículo - Checkplaca*\n\n` +
+          `📋 Placa: *${plate}*\n` +
+          `🚘 ${vehicleName}\n` +
+          `📅 Ano: ${vehicleInfo?.ano_fabricacao}/${vehicleInfo?.ano_modelo}\n\n` +
+          `✅ Imagem do relatório baixada!\n` +
+          `📎 Anexe a imagem e compartilhe`;
+        
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+      }, 500);
+      
+      toast({
+        title: "Imagem baixada!",
+        description: "Anexe no WhatsApp para compartilhar",
+      });
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+      toast({
+        title: "Erro ao compartilhar",
+        description: "Tente baixar a imagem manualmente",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   if (loading) {
@@ -383,7 +466,7 @@ const Report = () => {
                 disabled={generating}
               >
                 <Share2 className="mr-2" />
-                WhatsApp
+                {generating ? 'Gerando...' : 'WhatsApp'}
               </Button>
             </div>
           </div>
@@ -1164,9 +1247,10 @@ const Report = () => {
                 onClick={handleShareWhatsApp}
                 size="lg"
                 className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={generating}
               >
                 <Share2 className="mr-2" />
-                Compartilhar WhatsApp
+                {generating ? 'Gerando...' : 'Compartilhar WhatsApp'}
               </Button>
               <Button 
                 onClick={() => navigate('/')}
