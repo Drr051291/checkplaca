@@ -8,6 +8,7 @@ export const IncludedSection = () => {
     { text: "Histórico de roubo e furto", highlight: true },
     { text: "Histórico de leilão e uso anterior", highlight: true },
     { text: "Gravames - restrições financeiras (RENAJUD)", highlight: true },
+    { text: "Recalls e convocações do fabricante", highlight: true },
     { text: "Informações técnicas detalhadas", highlight: false },
     { text: "Verificação de situação do veículo", highlight: false },
     { text: "Relatório profissional completo", highlight: false }

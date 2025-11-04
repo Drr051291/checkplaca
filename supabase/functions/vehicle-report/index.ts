@@ -152,10 +152,49 @@ serve(async (req) => {
     // SE TEM PLANTYPE, faz consulta completa via protocolo
     console.log('Fazendo consulta completa via protocolo...');
     
-    // Para relatório completo (R$ 39,90), usar consulta personalizada com:
-    // 12 = FIPE, 4 = Roubo/Furto, 3 = Leilão PRIME, 5 = Gravames (RENAJUD)
+    // Definição de custos por módulo (em R$)
+    const custoPorModulo: Record<string, number> = {
+      '1': 0.37,    // basico
+      '12': 0.40,   // fipe
+      '4': 0.75,    // roubo_furto
+      '3': 2.90,    // leilao
+      '5': 1.60,    // gravame
+      '7': 1.80,    // historico_uso
+      '15': 0.50,   // recall
+      '2': 6.90,    // proprietario_atual (BLOQUEADO)
+      '8': 4.50,    // debitos_renainf (BLOQUEADO)
+      '9': 4.00,    // sinistro (BLOQUEADO)
+      '10': 16.90,  // leilao_prime (BLOQUEADO)
+    };
+
+    // Módulos permitidos (custo total: ~R$ 7,82)
+    const modulosPermitidos = ['1', '12', '4', '3', '5', '7', '15'];
+    
+    // Função para calcular custo total
+    function calcularCusto(modulos: string[]): number {
+      return modulos.reduce((acc, m) => acc + (custoPorModulo[m] || 0), 0);
+    }
+
+    // Validar custo antes de fazer a chamada
+    const custoEstimado = calcularCusto(modulosPermitidos);
+    const limiteMaximo = 12.00;
+    
+    console.log('💰 Módulos selecionados:', modulosPermitidos.join(', '));
+    console.log('💰 Custo estimado: R$', custoEstimado.toFixed(2));
+    console.log('💰 Limite máximo: R$', limiteMaximo.toFixed(2));
+    
+    if (custoEstimado > limiteMaximo) {
+      const errorMsg = `Operação cancelada: custo estimado R$ ${custoEstimado.toFixed(2)} excede o limite de R$ ${limiteMaximo.toFixed(2)}`;
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    console.log('✅ Custo validado! Prosseguindo com a consulta...');
+    
+    // Para relatório completo (R$ 39,90), usar consulta personalizada com módulos otimizados
+    // 1 = Básico, 12 = FIPE, 4 = Roubo/Furto, 3 = Leilão, 5 = Gravames, 7 = Histórico Uso, 15 = Recall
     const tipoConsulta = 'personalizada';
-    const informacoesAdicionais = '12,4,3,5';
+    const informacoesAdicionais = modulosPermitidos.join(',');
     console.log('Tipo de consulta: personalizada (relatório completo - R$ 39,90)');
     console.log('Informações adicionais:', informacoesAdicionais);
 

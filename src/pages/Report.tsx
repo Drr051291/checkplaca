@@ -496,7 +496,7 @@ const Report = () => {
                         Quer ver o relatório completo?
                       </h2>
                       <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                        Desbloqueie informações detalhadas: FIPE, roubo/furto, histórico de leilão e gravames financeiros
+                        Desbloqueie informações detalhadas: FIPE, roubo/furto, histórico de leilão, gravames e recalls
                       </p>
                     </div>
 
@@ -534,6 +534,10 @@ const Report = () => {
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
                               <span className="text-sm">Gravames - restrições financeiras (RENAJUD)</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span className="text-sm">Recalls e convocações do fabricante</span>
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
