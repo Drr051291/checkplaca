@@ -71,6 +71,33 @@ const Checkout = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const validateCPF = (cpf: string) => {
+    const cleanCpf = cpf.replace(/\D/g, '');
+    if (cleanCpf.length !== 11) return false;
+    
+    // Valida sequências inválidas
+    if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
+    
+    // Validação dos dígitos verificadores
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(cleanCpf.charAt(i)) * (10 - i);
+    }
+    let digit = 11 - (sum % 11);
+    if (digit >= 10) digit = 0;
+    if (digit !== parseInt(cleanCpf.charAt(9))) return false;
+    
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(cleanCpf.charAt(i)) * (11 - i);
+    }
+    digit = 11 - (sum % 11);
+    if (digit >= 10) digit = 0;
+    if (digit !== parseInt(cleanCpf.charAt(10))) return false;
+    
+    return true;
+  };
+
   const formatCPF = (value: string) => {
     return value
       .replace(/\D/g, '')
@@ -96,6 +123,16 @@ const Checkout = () => {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Valida CPF
+    if (!validateCPF(formData.cpf)) {
+      toast({
+        title: "CPF inválido",
+        description: "Por favor, verifique o CPF informado.",
         variant: "destructive",
       });
       return;
@@ -325,10 +362,21 @@ const Checkout = () => {
           <div className="max-w-2xl mx-auto">
             <Card className="shadow-strong">
               <CardHeader className="text-center">
-                <CheckCircle className="w-16 h-16 text-accent mx-auto mb-4" />
-                <CardTitle className="text-2xl">Pagamento Gerado</CardTitle>
+                <div className="relative">
+                  <CheckCircle className="w-16 h-16 text-accent mx-auto mb-4" />
+                  {checkingPayment && (
+                    <div className="absolute -top-1 -right-1">
+                      <Loader2 className="w-6 h-6 text-accent animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <CardTitle className="text-2xl">
+                  {checkingPayment ? 'Verificando Pagamento...' : 'Pagamento Gerado'}
+                </CardTitle>
                 <CardDescription>
-                  Complete o pagamento para liberar seu relatório
+                  {checkingPayment 
+                    ? 'Aguarde enquanto confirmamos seu pagamento' 
+                    : 'Complete o pagamento para liberar seu relatório'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -415,9 +463,26 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <p className="text-sm text-center text-blue-900 dark:text-blue-100">
-                    ⏱️ Após a confirmação do pagamento, seu relatório será liberado <strong>automaticamente</strong>
+                <div className={`rounded-lg p-4 border ${
+                  checkingPayment 
+                    ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' 
+                    : 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+                }`}>
+                  <p className={`text-sm text-center font-medium ${
+                    checkingPayment 
+                      ? 'text-green-900 dark:text-green-100' 
+                      : 'text-blue-900 dark:text-blue-100'
+                  }`}>
+                    {checkingPayment ? (
+                      <>
+                        <Loader2 className="w-4 h-4 inline mr-2 animate-spin" />
+                        Pagamento detectado! Gerando seu relatório completo...
+                      </>
+                    ) : (
+                      <>
+                        ⏱️ Após a confirmação do pagamento, seu relatório completo será gerado <strong>automaticamente</strong>
+                      </>
+                    )}
                   </p>
                 </div>
 

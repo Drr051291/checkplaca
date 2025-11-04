@@ -57,6 +57,12 @@ serve(async (req) => {
     }: PaymentRequest = await req.json();
 
     console.log('[create-payment] Criando pagamento:', { reportId, planType, paymentMethod });
+    
+    // Valida CPF
+    const cleanCpf = customerCpf.replace(/\D/g, '');
+    if (cleanCpf.length !== 11) {
+      throw new Error('CPF inválido. O CPF deve conter 11 dígitos.');
+    }
 
     // Define valores dos planos
     const planValues = {
@@ -71,7 +77,7 @@ serve(async (req) => {
     
     // Tenta buscar cliente existente
     const searchCustomerResponse = await fetch(
-      `https://api.asaas.com/v3/customers?cpfCnpj=${customerCpf}`,
+      `https://api.asaas.com/v3/customers?cpfCnpj=${cleanCpf}`,
       {
         method: 'GET',
         headers: {
@@ -99,8 +105,8 @@ serve(async (req) => {
           body: JSON.stringify({
             name: customerName,
             email: customerEmail,
-            phone: customerPhone,
-            cpfCnpj: customerCpf,
+            phone: customerPhone.replace(/\D/g, ''),
+            cpfCnpj: cleanCpf,
           }),
         }
       );

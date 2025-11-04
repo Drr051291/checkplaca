@@ -89,40 +89,57 @@ serve(async (req) => {
       console.error('[check-payment] Erro ao atualizar banco:', updateError);
     }
 
-    // Se o pagamento foi confirmado e ainda não temos um relatório completo, gera agora
+    // Se o pagamento foi confirmado, gera o relatório completo
     if (isPaid && paymentRecord?.report_id && paymentRecord?.plan_type) {
       console.log('[check-payment] Pagamento confirmado! Gerando relatório completo...');
       
       // Busca o relatório existente para pegar a placa
       const { data: report } = await supabase
         .from('vehicle_reports')
-        .select('plate')
+        .select('plate, report_data')
         .eq('id', paymentRecord.report_id)
         .single();
 
       if (report?.plate) {
-        try {
-          // Chama o vehicle-report para gerar relatório completo
-          const { data: newReport, error: reportError } = await supabase.functions.invoke('vehicle-report', {
-            body: { 
-              plate: report.plate,
-              planType: paymentRecord.plan_type
-            }
-          });
-
-          if (reportError) {
-            console.error('[check-payment] Erro ao gerar relatório completo:', reportError);
-          } else if (newReport?.success) {
-            console.log('[check-payment] Relatório completo gerado com sucesso');
+        // Verifica se o relatório já está completo (se já tem dados pagos)
+        const reportData = report.report_data as any;
+        const alreadyComplete = reportData?.premium_data || reportData?.complete_data;
+        
+        if (!alreadyComplete) {
+          try {
+            console.log('[check-payment] Gerando novo relatório completo para placa:', report.plate);
             
-            // Atualiza o report_id no pagamento para o novo relatório
-            await supabase
-              .from('payments')
-              .update({ report_id: newReport.reportId })
-              .eq('asaas_payment_id', paymentId);
+            // Chama o vehicle-report para gerar relatório completo
+            const { data: newReport, error: reportError } = await supabase.functions.invoke('vehicle-report', {
+              body: { 
+                plate: report.plate,
+                planType: paymentRecord.plan_type === 'premium' ? 'premium' : 'completo'
+              }
+            });
+
+            if (reportError) {
+              console.error('[check-payment] Erro ao gerar relatório completo:', reportError);
+            } else if (newReport?.success) {
+              console.log('[check-payment] Relatório completo gerado com sucesso:', newReport.reportId);
+              
+              // Atualiza o relatório existente com os novos dados
+              const { error: updateReportError } = await supabase
+                .from('vehicle_reports')
+                .update({ 
+                  report_data: newReport.reportData,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', paymentRecord.report_id);
+                
+              if (updateReportError) {
+                console.error('[check-payment] Erro ao atualizar relatório:', updateReportError);
+              }
+            }
+          } catch (e) {
+            console.error('[check-payment] Exceção ao gerar relatório:', e);
           }
-        } catch (e) {
-          console.error('[check-payment] Exceção ao gerar relatório:', e);
+        } else {
+          console.log('[check-payment] Relatório já está completo, pulando geração');
         }
       }
     }
