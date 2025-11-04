@@ -496,7 +496,7 @@ const Report = () => {
                         Quer ver o relatório completo?
                       </h2>
                       <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                        Desbloqueie informações detalhadas sobre sinistros, recalls, débitos e muito mais
+                        Desbloqueie informações detalhadas: FIPE, roubo/furto, histórico de leilão e gravames financeiros
                       </p>
                     </div>
 
@@ -517,15 +517,23 @@ const Report = () => {
                           <ul className="space-y-3 mb-8">
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Verificação de chassi remarcado</span>
+                              <span className="text-sm">Dados básicos do veículo completos</span>
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Status de baixa no Detran</span>
+                              <span className="text-sm">Tabela FIPE - valor de mercado atualizado</span>
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Dados completos do veículo</span>
+                              <span className="text-sm">Histórico de roubo e furto</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span className="text-sm">Histórico de leilão e uso anterior</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                              <span className="text-sm">Gravames - restrições financeiras (RENAJUD)</span>
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
@@ -533,19 +541,11 @@ const Report = () => {
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Dados de carga e capacidade</span>
+                              <span className="text-sm">Verificação de situação do veículo</span>
                             </li>
                             <li className="flex items-start gap-3">
                               <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Informações de órgãos oficiais</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Registro de débitos (RENAINF)</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">Download em PDF profissional</span>
+                              <span className="text-sm">Relatório profissional completo</span>
                             </li>
                           </ul>
                           <Button 
