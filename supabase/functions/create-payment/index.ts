@@ -163,31 +163,67 @@ serve(async (req) => {
 
     console.log('[create-payment] Cobrança criada com sucesso:', paymentData.id);
 
-    // Para PIX, buscar o QR Code e o payload explicitamente
+    // Para PIX, buscar o QR Code e o payload explicitamente com retry
     let pixQrCode: string | null = null;
     let pixCopyPaste: string | null = null;
 
     if (paymentMethod === 'PIX') {
-      try {
-        const pixResponse = await fetch(
-          `https://api.asaas.com/v3/payments/${paymentData.id}/pixQrCode`,
-          {
-            method: 'GET',
-            headers: {
-              'access_token': asaasApiKey,
-              'Content-Type': 'application/json',
-            },
+      // Função auxiliar para buscar PIX com retry
+      const fetchPixWithRetry = async (attempts = 3, delayMs = 2000): Promise<{qrCode: string | null, payload: string | null}> => {
+        for (let i = 0; i < attempts; i++) {
+          try {
+            console.log(`[create-payment] Tentativa ${i + 1}/${attempts} de buscar PIX QR Code...`);
+            
+            // Aguarda antes de tentar (dá tempo para o Asaas gerar)
+            if (i > 0) {
+              await new Promise(resolve => setTimeout(resolve, delayMs));
+            } else {
+              // Primeira tentativa: aguarda 3 segundos
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+            
+            const pixResponse = await fetch(
+              `https://api.asaas.com/v3/payments/${paymentData.id}/pixQrCode`,
+              {
+                method: 'GET',
+                headers: {
+                  'access_token': asaasApiKey,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+            
+            const pixData = await pixResponse.json();
+            
+            if (pixResponse.ok && pixData?.encodedImage && pixData?.payload) {
+              console.log('[create-payment] PIX QR Code obtido com sucesso na tentativa', i + 1);
+              return {
+                qrCode: pixData.encodedImage,
+                payload: pixData.payload
+              };
+            } else {
+              console.warn(`[create-payment] Tentativa ${i + 1} falhou:`, pixData);
+              if (i === attempts - 1) {
+                // Última tentativa falhou
+                console.error('[create-payment] Todas as tentativas de buscar PIX falharam');
+              }
+            }
+          } catch (e) {
+            console.warn(`[create-payment] Exceção na tentativa ${i + 1}:`, e);
+            if (i === attempts - 1) {
+              console.error('[create-payment] Todas as tentativas resultaram em exceção');
+            }
           }
-        );
-        const pixData = await pixResponse.json();
-        if (pixResponse.ok) {
-          pixQrCode = pixData?.encodedImage || null;
-          pixCopyPaste = pixData?.payload || null;
-        } else {
-          console.warn('[create-payment] Falha ao obter PIX QR Code:', pixData);
         }
-      } catch (e) {
-        console.warn('[create-payment] Exceção ao obter PIX QR Code:', e);
+        return { qrCode: null, payload: null };
+      };
+
+      const pixResult = await fetchPixWithRetry();
+      pixQrCode = pixResult.qrCode;
+      pixCopyPaste = pixResult.payload;
+      
+      if (!pixQrCode || !pixCopyPaste) {
+        console.warn('[create-payment] PIX QR Code não disponível após todas as tentativas. Cliente pode buscar depois.');
       }
     }
 

@@ -244,31 +244,92 @@ const Checkout = () => {
     if (!paymentData?.paymentId) return;
     try {
       setFetchingPix(true);
+      console.log('[Checkout] Buscando dados PIX para pagamento:', paymentData.paymentId);
+      
       const { data, error } = await supabase.functions.invoke('check-payment', {
         body: { paymentId: paymentData.paymentId },
       });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('[Checkout] Erro ao buscar PIX:', error);
+        throw error;
+      }
+      
+      console.log('[Checkout] Resposta do check-payment:', data);
+      
       if (data?.success) {
-        setPaymentData((prev: any) => ({
-          ...prev,
-          pixQrCode: data.pixQrCode || prev?.pixQrCode,
-          pixCopyPaste: data.payload || prev?.pixCopyPaste,
-          payload: data.payload || prev?.payload,
-        }));
+        const hasPixData = data.pixQrCode || data.payload;
+        if (hasPixData) {
+          console.log('[Checkout] Dados PIX recebidos com sucesso');
+          setPaymentData((prev: any) => ({
+            ...prev,
+            pixQrCode: data.pixQrCode || prev?.pixQrCode,
+            pixCopyPaste: data.payload || prev?.pixCopyPaste,
+            payload: data.payload || prev?.payload,
+          }));
+        } else {
+          console.warn('[Checkout] PIX ainda não disponível');
+        }
       }
     } catch (e) {
-      console.error('[Checkout] Erro ao buscar PIX:', e);
-      toast({ title: 'Erro', description: 'Não foi possível gerar a chave PIX.', variant: 'destructive' });
+      console.error('[Checkout] Exceção ao buscar PIX:', e);
+      toast({ 
+        title: 'Aguardando PIX', 
+        description: 'O código PIX está sendo gerado. Tentando novamente...', 
+      });
     } finally {
       setFetchingPix(false);
     }
   };
 
+  // Busca PIX automaticamente com retry
   useEffect(() => {
-    if (paymentData && paymentMethod === 'PIX' && !paymentData.pixCopyPaste && !paymentData.payload) {
-      fetchPix();
+    if (!paymentData?.paymentId) return;
+    if (paymentMethod !== 'PIX') return;
+    if (paymentData.pixCopyPaste || paymentData.payload) {
+      console.log('[Checkout] PIX já disponível, não é necessário buscar');
+      return;
     }
-  }, [paymentData, paymentMethod]);
+
+    console.log('[Checkout] Iniciando busca automática do PIX...');
+    
+    // Aguarda 2 segundos antes da primeira tentativa (dá tempo para o backend processar)
+    const initialTimeout = setTimeout(() => {
+      fetchPix();
+    }, 2000);
+
+    // Retry automático: tenta buscar a cada 3 segundos por até 5 tentativas
+    let retryCount = 0;
+    const maxRetries = 5;
+    
+    const retryInterval = setInterval(() => {
+      if (paymentData.pixCopyPaste || paymentData.payload) {
+        console.log('[Checkout] PIX obtido com sucesso, parando retry');
+        clearInterval(retryInterval);
+        return;
+      }
+      
+      if (retryCount >= maxRetries) {
+        console.warn('[Checkout] Número máximo de tentativas atingido');
+        clearInterval(retryInterval);
+        toast({
+          title: "PIX demorando mais que o esperado",
+          description: "Clique em 'Atualizar' para tentar novamente.",
+          variant: "default",
+        });
+        return;
+      }
+      
+      retryCount++;
+      console.log(`[Checkout] Retry ${retryCount}/${maxRetries}...`);
+      fetchPix();
+    }, 3000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(retryInterval);
+    };
+  }, [paymentData?.paymentId, paymentMethod]);
 
   // Check payment status every 5 seconds for both PIX and CREDIT_CARD
   useEffect(() => {
@@ -389,9 +450,25 @@ const Checkout = () => {
                           alt="QR Code PIX" 
                           className="mx-auto border-4 border-border rounded-lg w-64 h-64"
                         />
+                      ) : fetchingPix ? (
+                        <div className="mx-auto w-64 h-64 flex flex-col items-center justify-center border-2 border-dashed rounded-lg text-muted-foreground bg-secondary/30">
+                          <Loader2 className="w-12 h-12 animate-spin mb-3 text-accent" />
+                          <p className="text-sm font-medium">Gerando QR Code PIX...</p>
+                          <p className="text-xs mt-1">Isso pode levar alguns segundos</p>
+                        </div>
                       ) : (
-                        <div className="mx-auto w-64 h-64 flex items-center justify-center border-2 border-dashed rounded-lg text-muted-foreground">
-                          QR Code indisponível
+                        <div className="mx-auto w-64 h-64 flex flex-col items-center justify-center border-2 border-dashed rounded-lg text-muted-foreground">
+                          <QrCode className="w-12 h-12 mb-2 opacity-50" />
+                          <p className="text-sm">QR Code indisponível</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-3"
+                            onClick={fetchPix}
+                          >
+                            <RefreshCcw className="w-4 h-4 mr-2" />
+                            Atualizar
+                          </Button>
                         </div>
                       )}
                       <p className="text-sm text-muted-foreground mt-4">
@@ -407,9 +484,16 @@ const Checkout = () => {
                       <div className="bg-secondary/30 p-4 rounded-lg mb-3">
                         <p className="text-xs text-muted-foreground mb-2">Chave PIX:</p>
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 text-sm font-mono break-all bg-background p-3 rounded border">
-                            {paymentData.pixCopyPaste || paymentData.payload || 'Gerando código...'}
-                          </code>
+                          {fetchingPix && !paymentData.pixCopyPaste && !paymentData.payload ? (
+                            <div className="flex-1 flex items-center justify-center gap-2 bg-background p-3 rounded border">
+                              <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                              <span className="text-sm text-muted-foreground">Gerando código PIX...</span>
+                            </div>
+                          ) : (
+                            <code className="flex-1 text-sm font-mono break-all bg-background p-3 rounded border">
+                              {paymentData.pixCopyPaste || paymentData.payload || 'Aguardando geração...'}
+                            </code>
+                          )}
                         </div>
                       </div>
 
@@ -426,8 +510,17 @@ const Checkout = () => {
                         </Button>
                         {!paymentData.pixCopyPaste && !paymentData.payload && (
                           <Button type="button" variant="outline" size="lg" className="h-14" onClick={fetchPix} disabled={fetchingPix}>
-                            <RefreshCcw className="w-5 h-5 mr-2" />
-                            {fetchingPix ? 'Gerando...' : 'Gerar chave'}
+                            {fetchingPix ? (
+                              <>
+                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                Gerando...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCcw className="w-5 h-5 mr-2" />
+                                Atualizar
+                              </>
+                            )}
                           </Button>
                         )}
                       </div>
