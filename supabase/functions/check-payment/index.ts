@@ -43,26 +43,43 @@ serve(async (req) => {
       throw new Error('Erro ao consultar pagamento');
     }
 
-    // Tenta obter o QR Code e payload do PIX
+    // Tenta obter o QR Code e payload do PIX com retry curto
     let pixQrCode: string | null = null;
     let payload: string | null = null;
-    try {
-      const pixResp = await fetch(`https://api.asaas.com/v3/payments/${paymentId}/pixQrCode`, {
-        method: 'GET',
-        headers: {
-          'access_token': asaasApiKey,
-          'Content-Type': 'application/json',
-        },
-      });
-      const pixData = await pixResp.json();
-      if (pixResp.ok) {
-        pixQrCode = pixData?.encodedImage || null;
-        payload = pixData?.payload || null;
-      }
-    } catch (e) {
-      console.warn('[check-payment] Não foi possível obter PIX:', e);
-    }
 
+    const fetchPixWithRetry = async (attempts = 5, delayMs = 1000) => {
+      for (let i = 0; i < attempts; i++) {
+        try {
+          console.log(`[check-payment] Buscando PIX QR (tentativa ${i + 1}/${attempts})`);
+          const pixResp = await fetch(`https://api.asaas.com/v3/payments/${paymentId}/pixQrCode`, {
+            method: 'GET',
+            headers: {
+              'access_token': asaasApiKey,
+              'Content-Type': 'application/json',
+            },
+          });
+          const pixData = await pixResp.json();
+          console.log('[check-payment] Resposta pixQrCode:', {
+            ok: pixResp.ok,
+            hasImage: Boolean(pixData?.encodedImage),
+            hasPayload: Boolean(pixData?.payload),
+            status: pixResp.status,
+          });
+          if (pixResp.ok && (pixData?.encodedImage || pixData?.payload)) {
+            pixQrCode = pixData?.encodedImage || null;
+            payload = pixData?.payload || null;
+            return;
+          }
+        } catch (e) {
+          console.warn('[check-payment] Erro ao buscar PIX:', e);
+        }
+        // espera antes da próxima tentativa
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+      console.warn('[check-payment] PIX ainda não disponível após tentativas');
+    };
+
+    await fetchPixWithRetry();
     const isPaid = paymentData.status === 'CONFIRMED' || paymentData.status === 'RECEIVED';
 
     // Busca informações do pagamento no banco
@@ -151,6 +168,7 @@ serve(async (req) => {
         isPaid: paymentData.status === 'CONFIRMED' || paymentData.status === 'RECEIVED',
         pixQrCode,
         payload,
+        invoiceUrl: paymentData?.invoiceUrl || null,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

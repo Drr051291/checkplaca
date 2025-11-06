@@ -194,12 +194,10 @@ const Checkout = () => {
       if (data.success) {
         setPaymentData(data);
         
-        // Dispara busca do PIX caso ainda não tenha vindo na criação
-        if (!data.pixQrCode && !data.payload && !data.pixCopyPaste) {
-          setTimeout(() => {
-            fetchPix();
-          }, 1500);
-        }
+        // Dispara uma busca do PIX logo após criar (mesmo que já tenha vindo)
+        setTimeout(() => {
+          fetchPix();
+        }, 1000);
         
         // Track PIX generation
         trackPixGenerated(currentPlan.price, data.paymentId);
@@ -273,6 +271,7 @@ const Checkout = () => {
             pixQrCode: data.pixQrCode || prev?.pixQrCode,
             pixCopyPaste: data.payload || prev?.pixCopyPaste,
             payload: data.payload || prev?.payload,
+            invoiceUrl: data.invoiceUrl || prev?.invoiceUrl,
           }));
         } else {
           console.warn('[Checkout] PIX ainda não disponível');
