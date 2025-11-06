@@ -194,6 +194,13 @@ const Checkout = () => {
       if (data.success) {
         setPaymentData(data);
         
+        // Dispara busca do PIX caso ainda não tenha vindo na criação
+        if (!data.pixQrCode && !data.payload && !data.pixCopyPaste) {
+          setTimeout(() => {
+            fetchPix();
+          }, 1500);
+        }
+        
         // Track PIX generation
         trackPixGenerated(currentPlan.price, data.paymentId);
 
@@ -298,9 +305,9 @@ const Checkout = () => {
       fetchPix();
     }, 2000);
 
-    // Retry automático: tenta buscar a cada 3 segundos por até 5 tentativas
+    // Retry automático: tenta buscar a cada 5 segundos por até 10 tentativas
     let retryCount = 0;
-    const maxRetries = 5;
+    const maxRetries = 10;
     
     const retryInterval = setInterval(() => {
       if (paymentData.pixCopyPaste || paymentData.payload) {
@@ -323,7 +330,7 @@ const Checkout = () => {
       retryCount++;
       console.log(`[Checkout] Retry ${retryCount}/${maxRetries}...`);
       fetchPix();
-    }, 3000);
+    }, 5000);
 
     return () => {
       clearTimeout(initialTimeout);
@@ -508,6 +515,19 @@ const Checkout = () => {
                           <Copy className="w-5 h-5 mr-2" />
                           Copiar Código PIX
                         </Button>
+
+                        {paymentData?.invoiceUrl && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            className="h-14"
+                            onClick={() => window.open(paymentData.invoiceUrl, '_blank')}
+                          >
+                            Abrir fatura
+                          </Button>
+                        )}
+
                         {!paymentData.pixCopyPaste && !paymentData.payload && (
                           <Button type="button" variant="outline" size="lg" className="h-14" onClick={fetchPix} disabled={fetchingPix}>
                             {fetchingPix ? (
