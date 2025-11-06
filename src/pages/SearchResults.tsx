@@ -87,60 +87,97 @@ const SearchResults = () => {
             </CardContent>
           </Card>
 
-          {/* Upsell Card */}
-          <Card className="shadow-strong border-2 border-primary/30">
+          {/* Upsell Card - Otimizado para Conversão */}
+          <Card className="shadow-strong border-2 border-primary/30 overflow-hidden">
+            {/* Header com Urgência */}
+            <div className="bg-gradient-primary text-white p-4 text-center">
+              <Badge className="bg-white/20 text-white border-white/30 mb-2">
+                ⚡ Oferta Limitada
+              </Badge>
+              <p className="text-sm opacity-90">Relatório completo por apenas R$ 9,90</p>
+            </div>
+
             <CardContent className="p-8">
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold mb-3">
-                  Quer saber mais sobre este veículo?
+              {/* Proposta de Valor Principal */}
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold mb-3 bg-gradient-hero bg-clip-text text-transparent">
+                  Descubra TUDO sobre este veículo
                 </h2>
-                <p className="text-muted-foreground text-lg">
-                  Obtenha o relatório completo com todas as informações por apenas
+                <p className="text-muted-foreground text-lg mb-4">
+                  Evite surpresas desagradáveis e compre com segurança
                 </p>
-                <div className="text-5xl font-bold text-accent my-4">R$ 9,90</div>
+                <div className="inline-block">
+                  <div className="text-6xl font-bold text-accent mb-1">R$ 9,90</div>
+                  <div className="text-sm text-muted-foreground">Pagamento único • Sem mensalidades</div>
+                </div>
               </div>
 
+              {/* Benefícios com Destaque Visual */}
               <div className="space-y-3 mb-8">
-                <div className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg">
+                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-accent/10 to-transparent rounded-lg border border-accent/20">
                   <CheckCircle className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-semibold">Débitos e Pendências</div>
-                    <div className="text-sm text-muted-foreground">IPVA, multas, licenciamento e taxas</div>
+                    <div className="font-bold text-lg">Débitos e Pendências Financeiras</div>
+                    <div className="text-sm text-muted-foreground">IPVA atrasado, multas, licenciamento vencido e todas as taxas pendentes</div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg">
+                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-accent/10 to-transparent rounded-lg border border-accent/20">
                   <CheckCircle className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-semibold">Histórico de Sinistros</div>
-                    <div className="text-sm text-muted-foreground">Acidentes, perdas totais e roubos registrados</div>
+                    <div className="font-bold text-lg">Histórico Completo de Sinistros</div>
+                    <div className="text-sm text-muted-foreground">Acidentes graves, perdas totais, roubos e furtos registrados em seguradora</div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg">
+                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-accent/10 to-transparent rounded-lg border border-accent/20">
                   <CheckCircle className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-semibold">Restrições e Recalls</div>
-                    <div className="text-sm text-muted-foreground">Bloqueios judiciais e recalls do fabricante</div>
+                    <div className="font-bold text-lg">Restrições Legais e Recalls</div>
+                    <div className="text-sm text-muted-foreground">Bloqueios judiciais, restrições administrativas e recalls pendentes</div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg">
-                  <AlertCircle className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-accent/10 to-transparent rounded-lg border border-accent/20">
+                  <CheckCircle className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-semibold">E muito mais...</div>
-                    <div className="text-sm text-muted-foreground">Relatório completo disponível para download em PDF</div>
+                    <div className="font-bold text-lg">Relatório em PDF + Análise Detalhada</div>
+                    <div className="text-sm text-muted-foreground">Download imediato do relatório completo para compartilhar e guardar</div>
                   </div>
                 </div>
               </div>
 
+              {/* Social Proof */}
+              <div className="bg-secondary/30 rounded-lg p-4 mb-6 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <CheckCircle className="w-5 h-5 text-accent" />
+                  <span className="font-semibold">Mais de 50.000 consultas realizadas</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Brasileiros já protegeram suas compras com nossos relatórios
+                </p>
+              </div>
+
+              {/* CTA Principal - Maior e mais visível */}
               <Button 
                 onClick={handleGetFullReport}
-                className="w-full h-14 text-lg font-semibold gradient-primary hover:opacity-90 transition-smooth"
+                className="w-full h-16 text-xl font-bold gradient-primary hover:opacity-90 transition-smooth shadow-strong mb-4"
               >
-                Obter Relatório Completo - R$ 9,90
+                🔒 Obter Relatório Completo Agora - R$ 9,90
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                Pagamento 100% seguro • Resultado instantâneo
-              </p>
+              {/* Garantias e Segurança */}
+              <div className="grid grid-cols-3 gap-4 text-center text-xs text-muted-foreground border-t border-border pt-4">
+                <div>
+                  <CheckCircle className="w-5 h-5 text-accent mx-auto mb-1" />
+                  <div>Pagamento Seguro</div>
+                </div>
+                <div>
+                  <CheckCircle className="w-5 h-5 text-accent mx-auto mb-1" />
+                  <div>Resultado Instantâneo</div>
+                </div>
+                <div>
+                  <CheckCircle className="w-5 h-5 text-accent mx-auto mb-1" />
+                  <div>Dados Oficiais</div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
