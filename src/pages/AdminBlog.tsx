@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { PostVersionHistory } from "@/components/admin/PostVersionHistory";
 
 const AdminBlog = () => {
   const navigate = useNavigate();
@@ -240,6 +241,23 @@ const AdminBlog = () => {
       meta_title: post.meta_title || "",
       meta_description: post.meta_description || ""
     });
+    // Switch to editor tab when editing
+    const editorTab = document.querySelector('[value="editor"]') as HTMLElement;
+    editorTab?.click();
+  };
+
+  const handleRestoreVersion = async (version: any) => {
+    setFormData({
+      title: version.title,
+      slug: version.slug,
+      excerpt: version.excerpt || "",
+      content: version.content,
+      featured_image: version.featured_image || "",
+      category_id: version.category_id || "",
+      status: version.status,
+      meta_title: version.meta_title || "",
+      meta_description: version.meta_description || ""
+    });
   };
 
   const handleDelete = async () => {
@@ -298,9 +316,14 @@ const AdminBlog = () => {
 
       <div className="container py-8">
         <Tabs defaultValue="posts">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="new">Novo Post</TabsTrigger>
+            <TabsTrigger value="editor">
+              {editingPost ? "Editar Post" : "Novo Post"}
+            </TabsTrigger>
+            <TabsTrigger value="versions" disabled={!editingPost}>
+              Histórico
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts" className="space-y-4">
@@ -345,7 +368,7 @@ const AdminBlog = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="new">
+          <TabsContent value="editor">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -507,6 +530,29 @@ const AdminBlog = () => {
                 </form>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="versions">
+            {editingPost ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Histórico de Versões - {editingPost.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <PostVersionHistory
+                    postId={editingPost.id}
+                    currentTitle={editingPost.title}
+                    onRestore={handleRestoreVersion}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  Selecione um post para ver o histórico de versões
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
