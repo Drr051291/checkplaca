@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, Trash2, Eye } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Eye, Save, Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -30,6 +30,8 @@ const AdminBlog = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingPost, setEditingPost] = useState<any>(null);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -44,6 +46,7 @@ const AdminBlog = () => {
 
   useEffect(() => {
     checkAdminAccess();
+    loadDraft();
   }, []);
 
   const checkAdminAccess = async () => {
@@ -68,6 +71,78 @@ const AdminBlog = () => {
       navigate("/");
       toast.error("Acesso negado");
     }
+  };
+
+  // Auto-save effect
+  useEffect(() => {
+    if (!isAdmin) return;
+    
+    // Don't auto-save if form is empty
+    if (!formData.title && !formData.content) return;
+
+    const autoSaveInterval = setInterval(() => {
+      saveDraft();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [formData, isAdmin]);
+
+  const saveDraft = () => {
+    try {
+      setAutoSaveStatus('saving');
+      localStorage.setItem('blog_post_draft', JSON.stringify({
+        ...formData,
+        savedAt: new Date().toISOString(),
+        editingPostId: editingPost?.id || null
+      }));
+      setLastSaved(new Date());
+      setAutoSaveStatus('saved');
+      
+      // Reset to idle after 2 seconds
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Erro ao salvar rascunho:', error);
+      setAutoSaveStatus('idle');
+    }
+  };
+
+  const loadDraft = () => {
+    try {
+      const draft = localStorage.getItem('blog_post_draft');
+      if (draft) {
+        const parsedDraft = JSON.parse(draft);
+        const savedAt = new Date(parsedDraft.savedAt);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
+
+        // Only load if saved within last 24 hours
+        if (hoursDiff < 24) {
+          const shouldLoad = confirm(
+            `Encontramos um rascunho salvo em ${savedAt.toLocaleString('pt-BR')}. Deseja recuperá-lo?`
+          );
+
+          if (shouldLoad) {
+            const { savedAt: _savedAt, editingPostId, ...draftData } = parsedDraft;
+            setFormData(draftData);
+            setLastSaved(savedAt);
+            toast.success('Rascunho recuperado com sucesso!');
+          } else {
+            localStorage.removeItem('blog_post_draft');
+          }
+        } else {
+          // Remove old drafts
+          localStorage.removeItem('blog_post_draft');
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar rascunho:', error);
+    }
+  };
+
+  const clearDraft = () => {
+    localStorage.removeItem('blog_post_draft');
+    setLastSaved(null);
+    setAutoSaveStatus('idle');
   };
 
   const fetchPosts = async () => {
@@ -132,6 +207,7 @@ const AdminBlog = () => {
         toast.error("Erro ao atualizar post");
       } else {
         toast.success("Post atualizado com sucesso!");
+        clearDraft();
         resetForm();
         fetchPosts();
       }
@@ -144,6 +220,7 @@ const AdminBlog = () => {
         toast.error("Erro ao criar post");
       } else {
         toast.success("Post criado com sucesso!");
+        clearDraft();
         resetForm();
         fetchPosts();
       }
@@ -195,6 +272,8 @@ const AdminBlog = () => {
       meta_description: ""
     });
     setEditingPost(null);
+    setAutoSaveStatus('idle');
+    setLastSaved(null);
   };
 
   if (!isAdmin || loading) {
@@ -269,9 +348,32 @@ const AdminBlog = () => {
           <TabsContent value="new">
             <Card>
               <CardHeader>
-                <CardTitle>
-                  {editingPost ? "Editar Post" : "Novo Post"}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>
+                    {editingPost ? "Editar Post" : "Novo Post"}
+                  </CardTitle>
+                  
+                  {/* Auto-save Status */}
+                  <div className="flex items-center gap-2 text-sm">
+                    {autoSaveStatus === 'saving' && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-4 w-4 animate-pulse" />
+                        <span>Salvando rascunho...</span>
+                      </div>
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <Save className="h-4 w-4" />
+                        <span>Rascunho salvo</span>
+                      </div>
+                    )}
+                    {lastSaved && autoSaveStatus === 'idle' && (
+                      <div className="text-muted-foreground text-xs">
+                        Último save: {lastSaved.toLocaleTimeString('pt-BR')}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -392,6 +494,15 @@ const AdminBlog = () => {
                         Cancelar
                       </Button>
                     )}
+                    <Button 
+                      type="button" 
+                      variant="secondary" 
+                      onClick={saveDraft}
+                      disabled={!formData.title && !formData.content}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Salvar Rascunho Manualmente
+                    </Button>
                   </div>
                 </form>
               </CardContent>
