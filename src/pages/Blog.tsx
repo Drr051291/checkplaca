@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Calendar, Tag, ArrowRight } from "lucide-react";
-import { Helmet } from "react-helmet";
 
 interface BlogPost {
   id: string;
@@ -99,13 +98,6 @@ const Blog = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Blog CheckPlaca - Dicas sobre Consulta Veicular e Compra de Carros</title>
-        <meta name="description" content="Dicas essenciais sobre consulta veicular, como verificar débitos de veículos, identificar carros com restrições e fazer compras seguras." />
-        <meta name="keywords" content="blog veicular, consulta de veículos, débitos veiculares, compra de carros usados, dicas automotivas" />
-        <link rel="canonical" href="https://checkplaca.com.br/blog" />
-      </Helmet>
-
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
         {/* Header */}
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Clock, Eye, ArrowLeft, Tag } from "lucide-react";
-import { Helmet } from "react-helmet";
 import { Card } from "@/components/ui/card";
 
 interface Post {
@@ -122,43 +121,8 @@ const BlogPost = () => {
     );
   }
 
-  const schemaOrgArticle = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": post.title,
-    "description": post.excerpt,
-    "image": post.featured_image,
-    "datePublished": post.published_at,
-    "author": {
-      "@type": "Organization",
-      "name": "CheckPlaca"
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "CheckPlaca",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://checkplaca.com.br/logo.png"
-      }
-    }
-  };
-
   return (
     <>
-      <Helmet>
-        <title>{post.meta_title || `${post.title} - Blog CheckPlaca`}</title>
-        <meta name="description" content={post.meta_description || post.excerpt} />
-        <link rel="canonical" href={post.canonical_url || `https://checkplaca.com.br/blog/${post.slug}`} />
-        <meta property="og:title" content={post.title} />
-        <meta property="og:description" content={post.excerpt} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://checkplaca.com.br/blog/${post.slug}`} />
-        {post.featured_image && <meta property="og:image" content={post.featured_image} />}
-        <script type="application/ld+json">
-          {JSON.stringify(schemaOrgArticle)}
-        </script>
-      </Helmet>
-
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
         {/* Header */}
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
