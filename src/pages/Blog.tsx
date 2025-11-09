@@ -97,25 +97,57 @@ const Blog = () => {
     });
   };
 
+  // Schema.org structured data for blog listing
+  const schemaOrgBlog = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "Blog CheckPlaca",
+    "description": "Dicas essenciais sobre consulta veicular, como verificar débitos de veículos, identificar carros com restrições e fazer compras seguras.",
+    "url": "https://checkplaca.com.br/blog",
+    "publisher": {
+      "@type": "Organization",
+      "name": "CheckPlaca",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://checkplaca.com.br/logo.png"
+      }
+    }
+  };
+
+  const pageTitle = selectedCategory 
+    ? `${categories.find(c => c.slug === selectedCategory)?.name || ''} - Blog CheckPlaca`
+    : "Blog CheckPlaca - Dicas sobre Consulta Veicular e Compra de Carros";
+  
+  const pageDescription = selectedCategory
+    ? `Artigos sobre ${categories.find(c => c.slug === selectedCategory)?.name || ''} - Consulta veicular, débitos, restrições e compra segura de veículos.`
+    : "Dicas essenciais sobre consulta veicular, como verificar débitos de veículos, identificar carros com restrições e fazer compras seguras.";
+
   return (
     <>
       <Helmet>
-        <title>Blog CheckPlaca - Dicas sobre Consulta Veicular e Compra de Carros</title>
-        <meta name="description" content="Dicas essenciais sobre consulta veicular, como verificar débitos de veículos, identificar carros com restrições e fazer compras seguras." />
-        <meta name="keywords" content="blog veicular, consulta de veículos, débitos veiculares, compra de carros usados, dicas automotivas" />
-        <link rel="canonical" href="https://checkplaca.com.br/blog" />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta name="keywords" content="blog veicular, consulta de veículos, débitos veiculares, compra de carros usados, dicas automotivas, checkplaca" />
+        <link rel="canonical" href={selectedCategory ? `https://checkplaca.com.br/blog?category=${selectedCategory}` : "https://checkplaca.com.br/blog"} />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Blog CheckPlaca - Dicas sobre Consulta Veicular" />
-        <meta property="og:description" content="Dicas essenciais sobre consulta veicular, como verificar débitos de veículos, identificar carros com restrições e fazer compras seguras." />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://checkplaca.com.br/blog" />
         <meta property="og:site_name" content="CheckPlaca" />
+        <meta property="og:locale" content="pt_BR" />
         
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Blog CheckPlaca - Dicas sobre Consulta Veicular" />
-        <meta name="twitter:description" content="Dicas essenciais sobre consulta veicular, como verificar débitos de veículos, identificar carros com restrições e fazer compras seguras." />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:site" content="@checkplaca" />
+        
+        {/* Schema.org JSON-LD */}
+        <script type="application/ld+json">
+          {JSON.stringify(schemaOrgBlog)}
+        </script>
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">

@@ -122,17 +122,19 @@ const BlogPost = () => {
     );
   }
 
-  // Schema.org structured data
+  // Schema.org structured data for article
   const schemaOrgArticle = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": post.title,
     "description": post.excerpt,
-    "image": post.featured_image,
+    "image": post.featured_image || "https://checkplaca.com.br/og-image.png",
     "datePublished": post.published_at,
+    "dateModified": post.published_at,
     "author": {
       "@type": "Organization",
-      "name": "CheckPlaca"
+      "name": "CheckPlaca",
+      "url": "https://checkplaca.com.br"
     },
     "publisher": {
       "@type": "Organization",
@@ -145,33 +147,54 @@ const BlogPost = () => {
     "mainEntityOfPage": {
       "@type": "WebPage",
       "@id": post.canonical_url || `https://checkplaca.com.br/blog/${post.slug}`
-    }
+    },
+    "articleSection": post.category?.name,
+    "keywords": post.tags.map(t => t.name).join(", "),
+    "wordCount": post.content.split(/\s+/).length,
+    "inLanguage": "pt-BR"
   };
+
+  const articleKeywords = [
+    post.category?.name,
+    ...post.tags.map(t => t.name),
+    "consulta veicular",
+    "checkplaca"
+  ].filter(Boolean).join(", ");
 
   return (
     <>
       <Helmet>
         <title>{post.meta_title || `${post.title} - Blog CheckPlaca`}</title>
         <meta name="description" content={post.meta_description || post.excerpt} />
+        <meta name="keywords" content={articleKeywords} />
         <link rel="canonical" href={post.canonical_url || `https://checkplaca.com.br/blog/${post.slug}`} />
         
         {/* Open Graph */}
-        <meta property="og:title" content={post.title} />
-        <meta property="og:description" content={post.excerpt} />
+        <meta property="og:title" content={post.meta_title || post.title} />
+        <meta property="og:description" content={post.meta_description || post.excerpt} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`https://checkplaca.com.br/blog/${post.slug}`} />
         <meta property="og:site_name" content="CheckPlaca" />
+        <meta property="og:locale" content="pt_BR" />
         {post.featured_image && <meta property="og:image" content={post.featured_image} />}
+        {post.featured_image && <meta property="og:image:alt" content={post.title} />}
+        {post.featured_image && <meta property="og:image:width" content="1200" />}
+        {post.featured_image && <meta property="og:image:height" content="630" />}
         
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={post.title} />
-        <meta name="twitter:description" content={post.excerpt} />
+        <meta name="twitter:title" content={post.meta_title || post.title} />
+        <meta name="twitter:description" content={post.meta_description || post.excerpt} />
+        <meta name="twitter:site" content="@checkplaca" />
+        <meta name="twitter:creator" content="@checkplaca" />
         {post.featured_image && <meta name="twitter:image" content={post.featured_image} />}
+        {post.featured_image && <meta name="twitter:image:alt" content={post.title} />}
         
         {/* Article Meta */}
         <meta property="article:published_time" content={post.published_at} />
+        <meta property="article:modified_time" content={post.published_at} />
         {post.category && <meta property="article:section" content={post.category.name} />}
+        <meta property="article:author" content="CheckPlaca" />
         {post.tags.map((tag) => (
           <meta key={tag.slug} property="article:tag" content={tag.name} />
         ))}
