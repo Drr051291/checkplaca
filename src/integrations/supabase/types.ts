@@ -41,6 +41,78 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_post_versions: {
+        Row: {
+          canonical_url: string | null
+          category_id: string | null
+          change_summary: string | null
+          content: string
+          created_at: string | null
+          created_by: string | null
+          excerpt: string | null
+          featured_image: string | null
+          id: string
+          meta_description: string | null
+          meta_title: string | null
+          post_id: string
+          slug: string
+          status: string
+          title: string
+          version_number: number
+        }
+        Insert: {
+          canonical_url?: string | null
+          category_id?: string | null
+          change_summary?: string | null
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          post_id: string
+          slug: string
+          status: string
+          title: string
+          version_number: number
+        }
+        Update: {
+          canonical_url?: string | null
+          category_id?: string | null
+          change_summary?: string | null
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          post_id?: string
+          slug?: string
+          status?: string
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_versions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "blog_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_versions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           author_id: string | null
