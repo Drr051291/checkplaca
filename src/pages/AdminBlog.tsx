@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Edit, Trash2, Eye } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Eye } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 const AdminBlog = () => {
   const navigate = useNavigate();
@@ -305,13 +306,11 @@ const AdminBlog = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="content">Conteúdo (HTML) *</Label>
-                    <Textarea
-                      id="content"
-                      value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      rows={12}
-                      required
+                    <Label htmlFor="content">Conteúdo *</Label>
+                    <RichTextEditor
+                      content={formData.content}
+                      onChange={(content) => setFormData({ ...formData, content })}
+                      placeholder="Escreva o conteúdo do post aqui... Use a barra de ferramentas para formatar o texto."
                     />
                   </div>
 
