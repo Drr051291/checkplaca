@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react';
+import { ImageGallery } from './ImageGallery';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -24,7 +25,8 @@ import {
   Heading3,
   Minus,
   Eye,
-  Upload
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { useState, useCallback, useRef } from 'react';
 import {
@@ -439,60 +441,82 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
 
       {/* Image Dialog */}
       <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Adicionar Imagem</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="image-upload">Upload de Imagem</Label>
-              <Input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={uploadingImage}
-              />
-              <p className="text-xs text-muted-foreground">
-                Tamanho máximo: 5MB
-              </p>
-            </div>
+          
+          <Tabs defaultValue="gallery" className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="gallery">Galeria</TabsTrigger>
+              <TabsTrigger value="upload">Upload</TabsTrigger>
+              <TabsTrigger value="url">URL</TabsTrigger>
+            </TabsList>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Ou
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="image-url">URL da Imagem</Label>
-              <Input
-                id="image-url"
-                placeholder="https://exemplo.com/imagem.jpg"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addImageByUrl();
+            <TabsContent value="gallery" className="flex-1 overflow-hidden">
+              <ImageGallery
+                onSelectImage={(url) => {
+                  if (editor) {
+                    editor.chain().focus().setImage({ src: url }).run();
+                    setShowImageDialog(false);
                   }
                 }}
               />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowImageDialog(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={addImageByUrl} disabled={!imageUrl}>
-              Adicionar por URL
-            </Button>
-          </DialogFooter>
+            </TabsContent>
+
+            <TabsContent value="upload" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="image-upload">Fazer Upload de Imagem</Label>
+                <Input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tamanho máximo: 5MB • Formatos: JPG, PNG, GIF, WebP
+                </p>
+              </div>
+              
+              {uploadingImage && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Fazendo upload...
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="url" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="image-url">URL da Imagem</Label>
+                <Input
+                  id="image-url"
+                  placeholder="https://exemplo.com/imagem.jpg"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addImageByUrl();
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Cole o link de uma imagem da internet
+                </p>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowImageDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={addImageByUrl} disabled={!imageUrl}>
+                  Adicionar Imagem
+                </Button>
+              </DialogFooter>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>
