@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,6 +99,25 @@ const Blog = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Blog CheckPlaca - Dicas sobre Consulta Veicular e Compra de Carros</title>
+        <meta name="description" content="Dicas essenciais sobre consulta veicular, como verificar débitos de veículos, identificar carros com restrições e fazer compras seguras." />
+        <meta name="keywords" content="blog veicular, consulta de veículos, débitos veiculares, compra de carros usados, dicas automotivas" />
+        <link rel="canonical" href="https://checkplaca.com.br/blog" />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content="Blog CheckPlaca - Dicas sobre Consulta Veicular" />
+        <meta property="og:description" content="Dicas essenciais sobre consulta veicular, como verificar débitos de veículos, identificar carros com restrições e fazer compras seguras." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://checkplaca.com.br/blog" />
+        <meta property="og:site_name" content="CheckPlaca" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Blog CheckPlaca - Dicas sobre Consulta Veicular" />
+        <meta name="twitter:description" content="Dicas essenciais sobre consulta veicular, como verificar débitos de veículos, identificar carros com restrições e fazer compras seguras." />
+      </Helmet>
+
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
         {/* Header */}
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
