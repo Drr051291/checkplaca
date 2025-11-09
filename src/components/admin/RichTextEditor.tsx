@@ -23,9 +23,10 @@ import {
   Heading2,
   Heading3,
   Minus,
-  Eye
+  Eye,
+  Upload
 } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,8 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
   const [linkUrl, setLinkUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
 
   const editor = useEditor({
     extensions: [
@@ -78,20 +81,17 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
     },
   });
 
-  const handleImageUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const uploadImage = useCallback(async (file: File): Promise<string | null> => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Por favor, selecione apenas imagens');
-      return;
+      return null;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Imagem muito grande. Máximo: 5MB');
-      return;
+      return null;
     }
 
     setUploadingImage(true);
@@ -101,7 +101,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('blog-images')
         .upload(filePath, file);
 
@@ -111,18 +111,77 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
         .from('blog-images')
         .getPublicUrl(filePath);
 
-      if (editor) {
-        editor.chain().focus().setImage({ src: publicUrl }).run();
-      }
-
       toast.success('Imagem carregada com sucesso!');
+      return publicUrl;
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
       toast.error('Erro ao fazer upload da imagem');
+      return null;
     } finally {
       setUploadingImage(false);
     }
-  }, [editor]);
+  }, []);
+
+  const handleImageUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !editor) return;
+
+    const publicUrl = await uploadImage(file);
+    if (publicUrl) {
+      editor.chain().focus().setImage({ src: publicUrl }).run();
+    }
+  }, [editor, uploadImage]);
+
+  const handleDrop = useCallback(async (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    setIsDragging(false);
+    dragCounter.current = 0;
+
+    if (!editor) return;
+
+    const files = Array.from(event.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      toast.error('Nenhuma imagem encontrada');
+      return;
+    }
+
+    // Upload all images
+    for (const file of imageFiles) {
+      const publicUrl = await uploadImage(file);
+      if (publicUrl) {
+        editor.chain().focus().setImage({ src: publicUrl }).run();
+      }
+    }
+  }, [editor, uploadImage]);
+
+  const handleDragEnter = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragCounter.current++;
+    
+    if (event.dataTransfer.items && event.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragCounter.current--;
+    
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
 
   const addImageByUrl = useCallback(() => {
     if (!imageUrl) return;
@@ -303,10 +362,37 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
             </div>
           </Card>
 
-          {/* Editor */}
-          <Card className="border-2 border-border focus-within:border-primary transition-colors">
-            <EditorContent editor={editor} />
-          </Card>
+          {/* Editor with Drag & Drop */}
+          <div 
+            className="relative"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+          >
+            <Card className={`border-2 transition-all duration-200 ${
+              isDragging 
+                ? 'border-primary bg-primary/5 shadow-lg' 
+                : 'border-border focus-within:border-primary'
+            }`}>
+              <EditorContent editor={editor} />
+            </Card>
+
+            {/* Drag & Drop Overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 flex items-center justify-center bg-primary/10 backdrop-blur-sm border-2 border-dashed border-primary rounded-lg pointer-events-none">
+                <div className="text-center p-8 bg-background/90 rounded-lg shadow-lg">
+                  <Upload className="h-16 w-16 text-primary mx-auto mb-4 animate-bounce" />
+                  <p className="text-lg font-semibold text-primary">
+                    Solte as imagens aqui
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Suporta múltiplas imagens • Máx: 5MB cada
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="preview">
