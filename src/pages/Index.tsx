@@ -94,7 +94,7 @@ const Index = () => {
                 <li><a href="#" className="hover:text-primary transition-smooth">Sobre nós</a></li>
                 <li><a href="#" className="hover:text-primary transition-smooth">Como funciona</a></li>
                 <li><a href="#" className="hover:text-primary transition-smooth">Dúvidas frequentes</a></li>
-                <li><a href="#" className="hover:text-primary transition-smooth">Blog</a></li>
+                <li><a href="/blog" className="hover:text-primary transition-smooth">Blog</a></li>
               </ul>
             </div>
             <div>

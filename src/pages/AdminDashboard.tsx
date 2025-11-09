@@ -235,6 +235,12 @@ const AdminDashboard = () => {
               Checkplaca - Admin
             </h1>
             <div className="flex items-center gap-4">
+              <Button 
+                variant="outline"
+                onClick={() => navigate("/admin/blog")}
+              >
+                Gerenciar Blog
+              </Button>
               <p className="text-sm text-muted-foreground">
                 {session?.user.email}
               </p>
