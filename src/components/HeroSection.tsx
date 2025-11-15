@@ -49,9 +49,9 @@ export const HeroSection = () => {
       if (data.success) {
         toast({
           title: "Consulta realizada!",
-          description: "Redirecionando para o relatório...",
+          description: "Veja os resultados da sua busca...",
         });
-        navigate(`/report?id=${data.reportId}`);
+        navigate(`/search-results?plate=${cleanedPlate}&reportId=${data.reportId}`);
       } else {
         throw new Error(data.error || 'Erro ao processar consulta');
       }
