@@ -9,6 +9,7 @@ import { PlanComparison } from "@/components/cro/PlanComparison";
 import { Testimonials } from "@/components/cro/Testimonials";
 import { MoneyBackGuarantee } from "@/components/cro/MoneyBackGuarantee";
 import { TrustBadges } from "@/components/cro/TrustBadges";
+import { FAQ } from "@/components/cro/FAQ";
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
@@ -131,6 +132,11 @@ const SearchResults = () => {
               O que nossos clientes dizem
             </h3>
             <Testimonials />
+          </div>
+
+          {/* FAQ */}
+          <div className="mb-8">
+            <FAQ />
           </div>
 
           {/* Trust Badges */}
