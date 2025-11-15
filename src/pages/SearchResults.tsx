@@ -14,6 +14,7 @@ const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const plate = searchParams.get('plate') || '';
+  const reportId = searchParams.get('reportId') || '';
 
   // Mock data for demonstration
   const basicData = {
@@ -26,7 +27,7 @@ const SearchResults = () => {
   };
 
   const handleGetFullReport = (planType: 'completo' | 'premium' = 'completo') => {
-    navigate(`/checkout?plate=${plate}&planType=${planType}`);
+    navigate(`/checkout?reportId=${reportId}&plan=${planType}&plate=${plate}`);
   };
 
   return (
