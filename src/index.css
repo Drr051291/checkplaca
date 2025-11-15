@@ -149,4 +149,12 @@
   .hover-scale {
     @apply transition-transform duration-200 hover:scale-105;
   }
+
+  /* Blog post content images */
+  .prose img {
+    @apply rounded-lg shadow-md my-6 mx-auto;
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
 }
