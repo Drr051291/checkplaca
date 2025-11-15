@@ -26,7 +26,7 @@ const SearchResults = () => {
     status: "Ativo"
   };
 
-  const handleGetFullReport = (planType: 'completo' | 'premium' = 'completo') => {
+  const handleGetFullReport = (planType: 'completo' = 'completo') => {
     navigate(`/checkout?reportId=${reportId}&plan=${planType}&plate=${plate}`);
   };
 
