@@ -42,7 +42,11 @@ export const PlanComparison = ({ onSelectPlan, plate }: PlanComparisonProps) => 
               </span>
             </div>
           ))}
-          <Button variant="outline" className="w-full mt-4" disabled>
+          <Button 
+            variant="outline" 
+            className="w-full mt-4 border-primary/30 text-foreground bg-background/50 cursor-not-allowed opacity-100" 
+            disabled
+          >
             Plano Atual
           </Button>
         </CardContent>
