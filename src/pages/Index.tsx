@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { HeroSection } from "@/components/HeroSection";
 import { ReportExampleSection } from "@/components/ReportExampleSection";
 import { IncludedSection } from "@/components/IncludedSection";
+import { LatestBlogPosts } from "@/components/LatestBlogPosts";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -52,6 +53,9 @@ const Index = () => {
       <div id="exemplo-relatorio">
         <ReportExampleSection />
       </div>
+
+      {/* Latest Blog Posts */}
+      <LatestBlogPosts />
 
       {/* CTA Section */}
       <section className="py-12 sm:py-16 md:py-20 bg-gradient-hero text-primary-foreground">
