@@ -66,8 +66,8 @@ serve(async (req) => {
 
     // Define valores dos planos
     const planValues = {
-      completo: 19.90,
-      premium: 39.90,
+      completo: 39.90,
+      premium: 69.90,
     };
 
     const value = planValues[planType];

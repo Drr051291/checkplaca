@@ -36,7 +36,7 @@ const Checkout = () => {
   const planDetails = {
     completo: {
       name: 'Relatório Completo',
-      price: 19.90,
+      price: 39.90,
       features: [
         'Dados completos do veículo',
         'Histórico de sinistros',
