@@ -154,21 +154,22 @@ serve(async (req) => {
     
     // Definição de custos por módulo (em R$)
     const custoPorModulo: Record<string, number> = {
-      '1': 0.37,    // basico
-      '12': 0.40,   // fipe
-      '4': 0.75,    // roubo_furto
-      '3': 2.90,    // leilao
-      '5': 1.60,    // gravame
-      '7': 1.80,    // historico_uso
-      '15': 0.50,   // recall
+      '1': 0.37,    // basico - Dados cadastrais essenciais
+      '12': 0.40,   // fipe - Valor de mercado
+      '4': 0.75,    // roubo_furto - Histórico de ocorrências
+      '15': 0.50,   // recall - Campanhas de segurança
+      '3': 2.90,    // leilao (REMOVIDO - custo alto, menos relevante)
+      '5': 1.60,    // gravame (REMOVIDO - custo alto, menos relevante)
+      '7': 1.80,    // historico_uso (REMOVIDO - custo alto, menos relevante)
       '2': 6.90,    // proprietario_atual (BLOQUEADO)
       '8': 4.50,    // debitos_renainf (BLOQUEADO)
       '9': 4.00,    // sinistro (BLOQUEADO)
       '10': 16.90,  // leilao_prime (BLOQUEADO)
     };
 
-    // Módulos permitidos (custo total: ~R$ 7,82)
-    const modulosPermitidos = ['1', '12', '4', '3', '5', '7', '15'];
+    // Módulos otimizados para custo-benefício (custo total: ~R$ 2,02)
+    // Focado nos dados mais relevantes: cadastro, valor, segurança e recalls
+    const modulosPermitidos = ['1', '12', '4', '15'];
     
     // Função para calcular custo total
     function calcularCusto(modulos: string[]): number {
@@ -177,7 +178,7 @@ serve(async (req) => {
 
     // Validar custo antes de fazer a chamada
     const custoEstimado = calcularCusto(modulosPermitidos);
-    const limiteMaximo = 12.00;
+    const limiteMaximo = 5.00;
     
     console.log('💰 Módulos selecionados:', modulosPermitidos.join(', '));
     console.log('💰 Custo estimado: R$', custoEstimado.toFixed(2));
@@ -192,7 +193,12 @@ serve(async (req) => {
     console.log('✅ Custo validado! Prosseguindo com a consulta...');
     
     // Para relatório completo (R$ 39,90), usar consulta personalizada com módulos otimizados
-    // 1 = Básico, 12 = FIPE, 4 = Roubo/Furto, 3 = Leilão, 5 = Gravames, 7 = Histórico Uso, 15 = Recall
+    // Módulos incluídos:
+    // 1 = Dados Cadastrais (Marca, Modelo, Ano, Chassi, Cor, etc)
+    // 12 = Valor FIPE (Valor de mercado atualizado)
+    // 4 = Histórico de Roubo/Furto (Segurança)
+    // 15 = Recalls (Campanhas de segurança do fabricante)
+    // Custo total: ~R$ 2,02 por consulta
     const tipoConsulta = 'personalizada';
     const informacoesAdicionais = modulosPermitidos.join(',');
     console.log('Tipo de consulta: personalizada (relatório completo - R$ 39,90)');
