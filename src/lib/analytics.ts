@@ -90,7 +90,7 @@ export const trackViewItem = (product: ProductData) => {
 
   // Google Ads
   gtag('event', 'view_item', {
-    send_to: 'AW-CONVERSION_ID', // Usuário deve substituir
+    send_to: 'AW-17745350051',
     value: product.price,
     items: [product],
   });
@@ -122,7 +122,7 @@ export const trackBeginCheckout = (product: ProductData) => {
 
   // Google Ads
   gtag('event', 'begin_checkout', {
-    send_to: 'AW-CONVERSION_ID', // Usuário deve substituir
+    send_to: 'AW-17745350051',
     value: product.price,
     items: [product],
   });
@@ -189,7 +189,7 @@ export const trackPurchase = (purchaseData: PurchaseData) => {
 
   // Google Ads - Conversion
   gtag('event', 'conversion', {
-    send_to: 'AW-CONVERSION_ID/CONVERSION_LABEL', // Usuário deve substituir
+    send_to: 'AW-17745350051',
     value: purchaseData.value,
     currency: purchaseData.currency,
     transaction_id: purchaseData.transaction_id,
