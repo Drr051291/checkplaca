@@ -45,10 +45,10 @@ export const IncludedSection = () => {
             ))}
           </div>
 
-          <div className="text-center px-4">
+          <div className="text-center px-4 mt-6 sm:mt-8">
             <Button 
               size="lg"
-              className="h-12 sm:h-14 px-6 sm:px-10 gradient-primary hover:opacity-90 transition-smooth font-semibold shadow-strong text-sm sm:text-base w-full sm:w-auto"
+              className="h-12 sm:h-14 px-6 sm:px-10 bg-primary text-primary-foreground hover:bg-primary/90 transition-smooth font-semibold shadow-strong text-sm sm:text-base w-full sm:w-auto"
               onClick={() => {
                 const exampleSection = document.getElementById('exemplo-relatorio');
                 if (exampleSection) {
