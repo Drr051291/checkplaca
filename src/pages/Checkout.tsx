@@ -411,21 +411,21 @@ const Checkout = () => {
   if (paymentData) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4">
-            <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+        <header className="bg-gradient-hero border-b border-border/20 sticky top-0 z-50 shadow-sm">
+          <div className="container mx-auto px-4 py-3">
+            <h1 className="text-xl md:text-2xl font-bold text-white text-center">
               Checkplaca
             </h1>
             {checkingPayment && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-accent">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Verificando pagamento automaticamente...</span>
+              <div className="mt-2 flex items-center justify-center gap-2 text-xs md:text-sm text-white/90">
+                <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
+                <span>Verificando pagamento...</span>
               </div>
             )}
           </div>
         </header>
 
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-2xl mx-auto">
             <Card className="shadow-strong">
               <CardHeader className="text-center">
@@ -449,7 +449,7 @@ const Checkout = () => {
               <CardContent className="space-y-6">
                 {paymentMethod === 'PIX' && (
                   <div className="space-y-6">
-                    <div className="text-center">
+                    <div className="text-center space-y-4">
                       {paymentData.pixQrCode ? (
                         <img 
                           src={`data:image/png;base64,${paymentData.pixQrCode}`} 
@@ -477,17 +477,33 @@ const Checkout = () => {
                           </Button>
                         </div>
                       )}
-                      <p className="text-sm text-muted-foreground mt-4">
-                        Escaneie o QR Code com o app do seu banco
-                      </p>
+                      
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          Escaneie o QR Code com o app do seu banco
+                        </p>
+                        
+                        {/* CTA Principal - Copiar PIX logo após QR Code */}
+                        {(paymentData.pixCopyPaste || paymentData.payload) && (
+                          <Button
+                            type="button"
+                            size="lg"
+                            className="w-full max-w-md mx-auto h-12 md:h-14 gradient-primary font-semibold"
+                            onClick={() => copyToClipboard(paymentData.pixCopyPaste || paymentData.payload, 'Código PIX')}
+                          >
+                            <Copy className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                            Copiar Código PIX
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="border-t border-b py-6">
-                      <Label className="text-base font-semibold mb-3 block">
-                        Ou pague usando o PIX Copia e Cola:
+                    <div className="border-t pt-6">
+                      <Label className="text-sm font-semibold mb-3 block text-muted-foreground">
+                        Ou visualize o código completo:
                       </Label>
                       
-                      <div className="bg-secondary/30 p-4 rounded-lg mb-3">
+                      <div className="bg-secondary/30 p-3 md:p-4 rounded-lg">
                         <p className="text-xs text-muted-foreground mb-2">Chave PIX:</p>
                         <div className="flex items-center gap-2">
                           {fetchingPix && !paymentData.pixCopyPaste && !paymentData.payload ? (
@@ -496,31 +512,20 @@ const Checkout = () => {
                               <span className="text-sm text-muted-foreground">Gerando código PIX...</span>
                             </div>
                           ) : (
-                            <code className="flex-1 text-sm font-mono break-all bg-background p-3 rounded border">
+                            <code className="flex-1 text-xs md:text-sm font-mono break-all bg-background p-2 md:p-3 rounded border">
                               {paymentData.pixCopyPaste || paymentData.payload || 'Aguardando geração...'}
                             </code>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex gap-3">
-                        <Button
-                          type="button"
-                          size="lg"
-                          className="flex-1 h-14 gradient-primary font-semibold"
-                          onClick={() => copyToClipboard(paymentData.pixCopyPaste || paymentData.payload, 'Código PIX')}
-                          disabled={!paymentData.pixCopyPaste && !paymentData.payload}
-                        >
-                          <Copy className="w-5 h-5 mr-2" />
-                          Copiar Código PIX
-                        </Button>
-
+                      <div className="flex gap-3 mt-4">
                         {paymentData?.invoiceUrl && (
                           <Button
                             type="button"
                             variant="outline"
                             size="lg"
-                            className="h-14"
+                            className="flex-1 h-12"
                             onClick={() => window.open(paymentData.invoiceUrl, '_blank')}
                           >
                             Abrir fatura
