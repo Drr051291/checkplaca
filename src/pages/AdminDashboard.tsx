@@ -1,32 +1,42 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Search, DollarSign, FileText, TrendingUp, Calendar, Eye, CreditCard, Filter } from "lucide-react";
+import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 interface DashboardStats {
-  totalSearches: number;
+  totalSessions: number;
+  freeConsultations: number;
+  paidConsultations: number;
   totalRevenue: number;
-  paidReports: number;
-  conversionRate: number;
-  visitors: number;
-  planBreakdown: { [key: string]: number };
-  paymentMethodBreakdown: { [key: string]: number };
+  sessionToConsultationRate: number;
+  consultationToSaleRate: number;
 }
 
-interface RecentSearch {
+interface Customer {
   id: string;
+  name: string;
+  email: string;
+  phone: string;
+  cpf: string;
   plate: string;
+  amount: number;
   created_at: string;
-  plan_type: string | null;
-  amount: number | null;
-  payment_method: string | null;
-  status: string | null;
+}
+
+interface ChartData {
+  date: string;
+  consultas: number;
+  vendas: number;
 }
 
 const AdminDashboard = () => {
@@ -34,13 +44,15 @@ const AdminDashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
   const [period, setPeriod] = useState<string>("7");
+  const [customDateStart, setCustomDateStart] = useState<string>("");
+  const [customDateEnd, setCustomDateEnd] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check authentication and admin role
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -52,7 +64,6 @@ const AdminDashboard = () => {
 
         setSession(session);
 
-        // Check if user has admin role
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
@@ -96,96 +107,74 @@ const AdminDashboard = () => {
     
     const fetchDashboardData = async () => {
       try {
-        const daysAgo = parseInt(period);
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - daysAgo);
-        const startDateStr = startDate.toISOString();
+        const { startDate, endDate } = getDateRange();
 
-        // Fetch vehicle reports (total searches and visitors)
+        // Fetch all vehicle reports (total consultations)
         const { data: reports, error: reportsError } = await supabase
           .from('vehicle_reports')
           .select('id, created_at, user_id')
-          .gte('created_at', startDateStr);
+          .gte('created_at', startDate)
+          .lte('created_at', endDate);
 
         if (reportsError) throw reportsError;
 
-        // Fetch payments
+        // Fetch all payments (paid sales)
         const { data: payments, error: paymentsError } = await supabase
           .from('payments')
           .select('*')
-          .gte('created_at', startDateStr);
+          .eq('status', 'paid')
+          .gte('created_at', startDate)
+          .lte('created_at', endDate);
 
         if (paymentsError) throw paymentsError;
 
+        // Fetch customers
+        const { data: customersData, error: customersError } = await supabase
+          .from('customers')
+          .select('*')
+          .gte('created_at', startDate)
+          .lte('created_at', endDate)
+          .order('created_at', { ascending: false });
+
+        if (customersError) throw customersError;
+
         // Calculate statistics
-        const totalSearches = reports?.length || 0;
-        const paidPayments = payments?.filter(p => p.status === 'paid') || [];
-        const paidReports = paidPayments.length;
-        const totalRevenue = paidPayments.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0')), 0);
+        const totalConsultations = reports?.length || 0;
+        const paidConsultations = payments?.length || 0;
+        const freeConsultations = totalConsultations - paidConsultations;
+        const totalRevenue = payments?.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0')), 0) || 0;
+
+        // Unique sessions (unique user_ids for logged in users + anonymous reports)
+        const uniqueUserIds = new Set();
+        const anonymousReports = reports?.filter(r => !r.user_id) || [];
+        reports?.forEach(r => {
+          if (r.user_id) uniqueUserIds.add(r.user_id);
+        });
+        const totalSessions = uniqueUserIds.size + anonymousReports.length;
+
+        // Conversion rates
+        const sessionToConsultationRate = totalSessions > 0 
+          ? ((totalConsultations / totalSessions) * 100)
+          : 0;
         
-        // Calculate unique visitors (unique user_ids)
-        const uniqueUserIds = new Set(reports?.map(r => r.user_id).filter(Boolean));
-        const visitors = uniqueUserIds.size;
-
-        // Calculate conversion rate
-        const conversionRate = totalSearches > 0 
-          ? ((paidReports / totalSearches) * 100).toFixed(1)
-          : "0.0";
-
-        // Plan breakdown
-        const planBreakdown: { [key: string]: number } = {};
-        paidPayments.forEach(p => {
-          const plan = p.plan_type || 'Não especificado';
-          planBreakdown[plan] = (planBreakdown[plan] || 0) + 1;
-        });
-
-        // Payment method breakdown
-        const paymentMethodBreakdown: { [key: string]: number } = {};
-        paidPayments.forEach(p => {
-          const method = p.payment_method || 'Não especificado';
-          paymentMethodBreakdown[method] = (paymentMethodBreakdown[method] || 0) + 1;
-        });
+        const consultationToSaleRate = totalConsultations > 0 
+          ? ((paidConsultations / totalConsultations) * 100)
+          : 0;
 
         setStats({
-          totalSearches,
+          totalSessions,
+          freeConsultations,
+          paidConsultations,
           totalRevenue,
-          paidReports,
-          conversionRate: parseFloat(conversionRate),
-          visitors,
-          planBreakdown,
-          paymentMethodBreakdown
+          sessionToConsultationRate,
+          consultationToSaleRate
         });
 
-        // Fetch recent searches with payment info
-        const { data: recentData, error: recentError } = await supabase
-          .from('vehicle_reports')
-          .select(`
-            id,
-            plate,
-            created_at,
-            payments (
-              plan_type,
-              amount,
-              payment_method,
-              status
-            )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(10);
+        setCustomers(customersData || []);
 
-        if (recentError) throw recentError;
-
-        const formattedSearches: RecentSearch[] = (recentData || []).map((item: any) => ({
-          id: item.id,
-          plate: item.plate,
-          created_at: item.created_at,
-          plan_type: item.payments?.[0]?.plan_type || null,
-          amount: item.payments?.[0]?.amount || null,
-          payment_method: item.payments?.[0]?.payment_method || null,
-          status: item.payments?.[0]?.status || null
-        }));
-
-        setRecentSearches(formattedSearches);
+        // Prepare chart data
+        const dailyData = prepareDailyChartData(reports || [], payments || [], startDate, endDate);
+        setChartData(dailyData);
 
       } catch (error) {
         console.error('[AdminDashboard] Erro ao buscar dados:', error);
@@ -198,7 +187,132 @@ const AdminDashboard = () => {
     };
 
     fetchDashboardData();
-  }, [isAdmin, period, toast]);
+  }, [isAdmin, period, customDateStart, customDateEnd, toast]);
+
+  const getDateRange = () => {
+    const endDate = new Date().toISOString();
+    let startDate: string;
+
+    switch (period) {
+      case "today":
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        startDate = today.toISOString();
+        break;
+      case "7":
+        const last7Days = new Date();
+        last7Days.setDate(last7Days.getDate() - 7);
+        startDate = last7Days.toISOString();
+        break;
+      case "thisMonth":
+        const thisMonthStart = new Date();
+        thisMonthStart.setDate(1);
+        thisMonthStart.setHours(0, 0, 0, 0);
+        startDate = thisMonthStart.toISOString();
+        break;
+      case "lastMonth":
+        const lastMonthStart = new Date();
+        lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
+        lastMonthStart.setDate(1);
+        lastMonthStart.setHours(0, 0, 0, 0);
+        const lastMonthEnd = new Date();
+        lastMonthEnd.setDate(0);
+        lastMonthEnd.setHours(23, 59, 59, 999);
+        return { startDate: lastMonthStart.toISOString(), endDate: lastMonthEnd.toISOString() };
+      case "thisYear":
+        const thisYearStart = new Date();
+        thisYearStart.setMonth(0, 1);
+        thisYearStart.setHours(0, 0, 0, 0);
+        startDate = thisYearStart.toISOString();
+        break;
+      case "custom":
+        if (customDateStart && customDateEnd) {
+          return {
+            startDate: new Date(customDateStart).toISOString(),
+            endDate: new Date(customDateEnd + 'T23:59:59').toISOString()
+          };
+        }
+        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        break;
+      default:
+        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
+    return { startDate, endDate };
+  };
+
+  const prepareDailyChartData = (reports: any[], payments: any[], startDate: string, endDate: string) => {
+    const dailyMap = new Map<string, { consultas: number; vendas: number }>();
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Initialize all dates in range
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateKey = d.toISOString().split('T')[0];
+      dailyMap.set(dateKey, { consultas: 0, vendas: 0 });
+    }
+
+    // Count consultations per day
+    reports.forEach(report => {
+      const dateKey = new Date(report.created_at).toISOString().split('T')[0];
+      if (dailyMap.has(dateKey)) {
+        const existing = dailyMap.get(dateKey)!;
+        dailyMap.set(dateKey, { ...existing, consultas: existing.consultas + 1 });
+      }
+    });
+
+    // Count sales per day
+    payments.forEach(payment => {
+      const dateKey = new Date(payment.created_at).toISOString().split('T')[0];
+      if (dailyMap.has(dateKey)) {
+        const existing = dailyMap.get(dateKey)!;
+        dailyMap.set(dateKey, { ...existing, vendas: existing.vendas + 1 });
+      }
+    });
+
+    return Array.from(dailyMap.entries())
+      .map(([date, data]) => ({
+        date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        ...data
+      }))
+      .slice(-30); // Show last 30 days max
+  };
+
+  const handleExportCustomers = () => {
+    if (customers.length === 0) {
+      toast({
+        title: "Nenhum cliente",
+        description: "Não há clientes para exportar no período selecionado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const csvContent = [
+      ['Nome', 'Email', 'Telefone', 'CPF', 'Placa', 'Valor', 'Data'],
+      ...customers.map(c => [
+        c.name,
+        c.email,
+        c.phone,
+        c.cpf,
+        c.plate,
+        `R$ ${c.amount.toFixed(2)}`,
+        new Date(c.created_at).toLocaleString('pt-BR')
+      ])
+    ].map(row => row.join(';')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `clientes_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+
+    toast({
+      title: "Exportação concluída",
+      description: `${customers.length} clientes exportados com sucesso.`,
+    });
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -228,28 +342,29 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <header className="border-b border-border bg-gradient-hero sticky top-0 z-50 shadow-soft">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 className="text-2xl font-bold text-white">
               Checkplaca - Admin
             </h1>
             <div className="flex items-center gap-4">
               <Button 
                 variant="outline"
                 onClick={() => navigate("/admin/blog")}
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20"
               >
                 Gerenciar Blog
               </Button>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/80">
                 {session?.user.email}
               </p>
               <Button 
                 variant="ghost"
                 onClick={handleLogout}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="text-white hover:text-white hover:bg-white/10"
               >
-                <LogOut className="mr-2" />
+                <LogOut className="mr-2 w-4 h-4" />
                 Sair
               </Button>
             </div>
@@ -258,63 +373,107 @@ const AdminDashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Title and Period Filter */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold mb-2">Dashboard</h2>
-            <p className="text-muted-foreground">Visão geral das consultas e receita</p>
+            <p className="text-muted-foreground">Visão geral completa das métricas</p>
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Calendar className="w-4 h-4 text-muted-foreground" />
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="today">Hoje</SelectItem>
                 <SelectItem value="7">Últimos 7 dias</SelectItem>
-                <SelectItem value="30">Últimos 30 dias</SelectItem>
-                <SelectItem value="90">Últimos 90 dias</SelectItem>
-                <SelectItem value="365">Último ano</SelectItem>
+                <SelectItem value="thisMonth">Este mês</SelectItem>
+                <SelectItem value="lastMonth">Mês passado</SelectItem>
+                <SelectItem value="thisYear">Este ano</SelectItem>
+                <SelectItem value="custom">Personalizado</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
+        {/* Custom Date Range */}
+        {period === "custom" && (
+          <div className="mb-8 flex gap-4 items-end">
+            <div className="flex-1">
+              <Label htmlFor="startDate">Data Inicial</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={customDateStart}
+                onChange={(e) => setCustomDateStart(e.target.value)}
+              />
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="endDate">Data Final</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={customDateEnd}
+                onChange={(e) => setCustomDateEnd(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 mb-8">
-          <Card className="shadow-soft hover:shadow-strong transition-smooth">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-primary">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Visitantes
+                Sessões Reais
               </CardTitle>
               <Eye className="w-5 h-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.visitors.toLocaleString('pt-BR')}</div>
+              <div className="text-3xl font-bold">{stats.totalSessions.toLocaleString('pt-BR')}</div>
               <p className="text-xs text-muted-foreground mt-2">
                 Usuários únicos
               </p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-soft hover:shadow-strong transition-smooth">
+          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-secondary">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Consultas
+                Consultas Gratuitas
               </CardTitle>
-              <Search className="w-5 h-5 text-primary" />
+              <Search className="w-5 h-5 text-secondary" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalSearches.toLocaleString('pt-BR')}</div>
+              <div className="text-3xl font-bold text-secondary">{stats.freeConsultations.toLocaleString('pt-BR')}</div>
               <p className="text-xs text-muted-foreground mt-2">
-                Total de buscas
+                Relatórios básicos
               </p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-soft hover:shadow-strong transition-smooth">
+          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-accent">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Vendas
+              </CardTitle>
+              <ShoppingCart className="w-5 h-5 text-accent" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-accent">
+                {stats.paidConsultations.toLocaleString('pt-BR')}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Relatórios pagos
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-accent">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Receita Total
               </CardTitle>
               <DollarSign className="w-5 h-5 text-accent" />
             </CardHeader>
@@ -323,174 +482,175 @@ const AdminDashboard = () => {
                 R$ {stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {stats.paidReports} relatórios
+                {stats.paidConsultations} vendas via PIX
               </p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-soft hover:shadow-strong transition-smooth">
+          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-primary">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Taxa de Conversão
+                Sessão → Consulta
+              </CardTitle>
+              <Target className="w-5 h-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.sessionToConsultationRate.toFixed(1)}%</div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Taxa de conversão
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-accent">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Consulta → Venda
               </CardTitle>
               <TrendingUp className="w-5 h-5 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.conversionRate}%</div>
+              <div className="text-3xl font-bold text-accent">{stats.consultationToSaleRate.toFixed(1)}%</div>
               <p className="text-xs text-muted-foreground mt-2">
-                Gratuito → Pago
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft hover:shadow-strong transition-smooth">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Plano Popular
-              </CardTitle>
-              <FileText className="w-5 h-5 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {Object.keys(stats.planBreakdown).length > 0 
-                  ? Object.entries(stats.planBreakdown).sort((a, b) => b[1] - a[1])[0][0]
-                  : 'N/A'}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Mais vendido
+                Taxa de conversão
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Plan and Payment Method Breakdown */}
+        {/* Charts */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <Card className="shadow-soft">
             <CardHeader>
-              <CardTitle className="text-lg">Vendas por Plano</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Consultas vs Vendas
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {Object.entries(stats.planBreakdown).length > 0 ? (
-                  Object.entries(stats.planBreakdown).map(([plan, count]) => (
-                    <div key={plan} className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{plan}</span>
-                      <Badge variant="secondary">{count}</Badge>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhuma venda no período</p>
-                )}
-              </div>
+              <ChartContainer
+                config={{
+                  consultas: {
+                    label: "Consultas",
+                    color: "hsl(var(--secondary))",
+                  },
+                  vendas: {
+                    label: "Vendas",
+                    color: "hsl(var(--accent))",
+                  },
+                }}
+                className="h-[300px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="consultas" fill="hsl(var(--secondary))" />
+                    <Bar dataKey="vendas" fill="hsl(var(--accent))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
             </CardContent>
           </Card>
 
           <Card className="shadow-soft">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                Meios de Pagamento
+                <TrendingUp className="w-5 h-5" />
+                Evolução de Vendas
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {Object.entries(stats.paymentMethodBreakdown).length > 0 ? (
-                  Object.entries(stats.paymentMethodBreakdown).map(([method, count]) => (
-                    <div key={method} className="flex items-center justify-between">
-                      <span className="text-sm font-medium capitalize">{method}</span>
-                      <Badge variant="secondary">{count}</Badge>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhum pagamento no período</p>
-                )}
-              </div>
+              <ChartContainer
+                config={{
+                  vendas: {
+                    label: "Vendas",
+                    color: "hsl(var(--accent))",
+                  },
+                }}
+                className="h-[300px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line type="monotone" dataKey="vendas" stroke="hsl(var(--accent))" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
             </CardContent>
           </Card>
         </div>
 
-        {/* Recent Searches Table */}
+        {/* Customers Table */}
         <Card className="shadow-strong">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl">Consultas Recentes</CardTitle>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Users className="w-6 h-6" />
+                  Base de Clientes
+                </CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Últimas consultas realizadas na plataforma
+                  {customers.length} clientes no período selecionado
                 </p>
               </div>
-              <Button variant="outline">
-                <Calendar className="mr-2 w-4 h-4" />
+              <Button onClick={handleExportCustomers} variant="outline">
+                <Download className="mr-2 w-4 h-4" />
                 Exportar CSV
               </Button>
             </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                      Placa
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                      Data/Hora
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                      Tipo
-                    </th>
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-muted-foreground">
-                      Valor
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentSearches.length > 0 ? (
-                    recentSearches.map((search) => {
-                      const isPaid = search.status === 'paid';
-                      const formattedDate = new Date(search.created_at).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      });
-
-                      return (
-                        <tr key={search.id} className="border-b border-border hover:bg-secondary/50 transition-smooth">
-                          <td className="py-4 px-4">
-                            <span className="font-mono font-bold tracking-wider">{search.plate}</span>
-                          </td>
-                          <td className="py-4 px-4 text-sm text-muted-foreground">
-                            {formattedDate}
-                          </td>
-                          <td className="py-4 px-4">
-                            <Badge 
-                              className={isPaid
-                                ? "bg-accent text-accent-foreground" 
-                                : "bg-secondary text-secondary-foreground"
-                              }
-                            >
-                              {isPaid ? search.plan_type || 'Pago' : 'Gratuito'}
-                            </Badge>
-                          </td>
-                          <td className="py-4 px-4 text-right font-semibold">
-                            {isPaid && search.amount 
-                              ? `R$ ${parseFloat(search.amount.toString()).toFixed(2)}`
-                              : '-'}
-                          </td>
-                        </tr>
-                      );
-                    })
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Placa</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead>Data</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customers.length > 0 ? (
+                    customers.map((customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell className="font-medium">{customer.name}</TableCell>
+                        <TableCell>{customer.email}</TableCell>
+                        <TableCell>{customer.phone}</TableCell>
+                        <TableCell className="font-mono">{customer.cpf}</TableCell>
+                        <TableCell className="font-mono font-bold">{customer.plate}</TableCell>
+                        <TableCell className="text-right font-semibold text-accent">
+                          R$ {customer.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(customer.created_at).toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    ))
                   ) : (
-                    <tr>
-                      <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                        Nenhuma consulta registrada
-                      </td>
-                    </tr>
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        Nenhum cliente no período selecionado
+                      </TableCell>
+                    </TableRow>
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
