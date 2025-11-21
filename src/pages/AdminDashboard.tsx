@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3 } from "lucide-react";
+import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { useQuery } from "@tanstack/react-query";
 
 interface DashboardStats {
   totalSessions: number;
@@ -51,6 +52,18 @@ const AdminDashboard = () => {
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Query para consultar saldo da API
+  const { data: balanceData, isLoading: balanceLoading, refetch: refetchBalance } = useQuery({
+    queryKey: ['api-balance'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('check-balance');
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 60000, // Atualizar a cada 1 minuto
+    enabled: isAdmin,
+  });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -420,6 +433,63 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Saldo API - Destaque no topo */}
+        <Card className={`mb-8 shadow-strong transition-smooth border-l-4 ${
+          balanceData?.saldo < 50 ? 'border-l-destructive bg-destructive/5' : 
+          balanceData?.saldo < 100 ? 'border-l-orange-500 bg-orange-500/5' : 
+          'border-l-green-500 bg-green-500/5'
+        }`}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                {balanceData?.saldo < 50 && <AlertTriangle className="w-5 h-5 text-destructive" />}
+                Saldo API Consultar Placa
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Atualizado em tempo real
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => refetchBalance()}
+              disabled={balanceLoading}
+            >
+              {balanceLoading ? 'Atualizando...' : 'Atualizar'}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-4">
+              <div className={`text-5xl font-bold ${
+                balanceData?.saldo < 50 ? 'text-destructive' : 
+                balanceData?.saldo < 100 ? 'text-orange-500' : 
+                'text-green-500'
+              }`}>
+                {balanceLoading ? '...' : `R$ ${(balanceData?.saldo || 0).toFixed(2)}`}
+              </div>
+              <div className="text-sm">
+                {balanceData?.saldo < 50 && (
+                  <div className="flex items-center gap-2 text-destructive font-semibold">
+                    <AlertTriangle className="w-4 h-4" />
+                    Saldo crítico! Recarregue imediatamente.
+                  </div>
+                )}
+                {balanceData?.saldo >= 50 && balanceData?.saldo < 100 && (
+                  <div className="flex items-center gap-2 text-orange-500 font-semibold">
+                    <AlertTriangle className="w-4 h-4" />
+                    Saldo baixo. Considere recarregar em breve.
+                  </div>
+                )}
+                {balanceData?.saldo >= 100 && (
+                  <div className="text-green-600 font-semibold">
+                    ✓ Saldo adequado
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
