@@ -199,6 +199,66 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          amount: number
+          cpf: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          payment_id: string | null
+          phone: string
+          plan_type: string
+          plate: string
+          report_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          cpf: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          payment_id?: string | null
+          phone: string
+          plan_type: string
+          plate: string
+          report_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cpf?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          payment_id?: string | null
+          phone?: string
+          plan_type?: string
+          plate?: string
+          report_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number

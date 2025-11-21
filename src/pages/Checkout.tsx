@@ -161,6 +161,33 @@ const Checkout = () => {
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: requestBody,
       });
+      
+      // Save customer data to database if payment was created
+      if (data?.success && data?.payment?.id) {
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          
+          const { error: customerError } = await supabase
+            .from('customers')
+            .insert({
+              report_id: reportId,
+              payment_id: data.payment.id,
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone.replace(/\D/g, ''),
+              cpf: formData.cpf.replace(/\D/g, ''),
+              plate: plate,
+              plan_type: planType,
+              amount: currentPlan.price
+            });
+          
+          if (customerError) {
+            console.error('[Checkout] Erro ao salvar dados do cliente:', customerError);
+          }
+        } catch (customerSaveError) {
+          console.error('[Checkout] Erro ao salvar dados do cliente:', customerSaveError);
+        }
+      }
 
       if (error) {
         console.error('[Checkout] create-payment error:', error);
