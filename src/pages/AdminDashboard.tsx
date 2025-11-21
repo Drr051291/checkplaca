@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3 } from "lucide-react";
+import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3, Monitor, Smartphone, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,16 @@ interface DashboardStats {
   totalRevenue: number;
   sessionToConsultationRate: number;
   consultationToSaleRate: number;
+}
+
+interface AnalyticsStats {
+  visitors: number;
+  pageviews: number;
+  avgDuration: string;
+  bounceRate: number;
+  topPages: { path: string; count: number }[];
+  sources: { source: string; count: number }[];
+  devices: { device: string; count: number }[];
 }
 
 interface Customer {
@@ -45,6 +55,7 @@ const AdminDashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [analyticsStats, setAnalyticsStats] = useState<AnalyticsStats | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [period, setPeriod] = useState<string>("7");
@@ -52,6 +63,21 @@ const AdminDashboard = () => {
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Fetch Lovable Analytics
+  const { data: analyticsData } = useQuery({
+    queryKey: ['lovable-analytics', period, customDateStart, customDateEnd],
+    queryFn: async () => {
+      const { startDate, endDate } = getDateRange();
+      const start = startDate.split('T')[0];
+      const end = endDate.split('T')[0];
+      
+      const response = await fetch(`/.netlify/functions/read-analytics?start=${start}&end=${end}&granularity=daily`);
+      if (!response.ok) throw new Error('Failed to fetch analytics');
+      return response.json();
+    },
+    enabled: isAdmin,
+  });
 
 
   useEffect(() => {
@@ -178,6 +204,60 @@ const AdminDashboard = () => {
         const dailyData = prepareDailyChartData(reports || [], payments || [], startDate, endDate);
         setChartData(dailyData);
 
+        // Process Lovable Analytics data
+        if (analyticsData) {
+          const totalPageviews = analyticsData.pageviews?.reduce((sum: number, pv: any) => sum + (pv.count || 0), 0) || 0;
+          const totalVisitors = analyticsData.visitors || 0;
+          const totalDuration = analyticsData.durations?.reduce((sum: number, d: any) => sum + (d.duration || 0), 0) || 0;
+          const avgDuration = totalVisitors > 0 ? Math.floor(totalDuration / totalVisitors) : 0;
+          const minutes = Math.floor(avgDuration / 60);
+          const seconds = avgDuration % 60;
+          
+          // Calculate bounce rate (sessions with only 1 pageview / total sessions * 100)
+          const singlePageSessions = analyticsData.pageviews?.filter((pv: any) => pv.count === 1).length || 0;
+          const bounceRate = totalVisitors > 0 ? Math.round((singlePageSessions / totalVisitors) * 100) : 0;
+
+          // Top pages
+          const pagesMap = new Map<string, number>();
+          analyticsData.pageviews?.forEach((pv: any) => {
+            pagesMap.set(pv.path || '/', (pagesMap.get(pv.path || '/') || 0) + (pv.count || 0));
+          });
+          const topPages = Array.from(pagesMap.entries())
+            .map(([path, count]) => ({ path, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+          // Sources (referrers)
+          const sourcesMap = new Map<string, number>();
+          analyticsData.referrers?.forEach((ref: any) => {
+            const source = ref.referrer || 'Direto';
+            sourcesMap.set(source, (sourcesMap.get(source) || 0) + (ref.count || 0));
+          });
+          const sources = Array.from(sourcesMap.entries())
+            .map(([source, count]) => ({ source, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+          // Devices
+          const devicesMap = new Map<string, number>();
+          analyticsData.devices?.forEach((dev: any) => {
+            devicesMap.set(dev.device || 'Desconhecido', (devicesMap.get(dev.device || 'Desconhecido') || 0) + (dev.count || 0));
+          });
+          const devices = Array.from(devicesMap.entries())
+            .map(([device, count]) => ({ device, count }))
+            .sort((a, b) => b.count - a.count);
+
+          setAnalyticsStats({
+            visitors: totalVisitors,
+            pageviews: totalPageviews,
+            avgDuration: `${minutes}m ${seconds}s`,
+            bounceRate,
+            topPages,
+            sources,
+            devices,
+          });
+        }
+
       } catch (error) {
         console.error('[AdminDashboard] Erro ao buscar dados:', error);
         toast({
@@ -189,7 +269,7 @@ const AdminDashboard = () => {
     };
 
     fetchDashboardData();
-  }, [isAdmin, period, customDateStart, customDateEnd, toast]);
+  }, [isAdmin, period, customDateStart, customDateEnd, toast, analyticsData]);
 
   const getDateRange = () => {
     const endDate = new Date().toISOString();
@@ -422,6 +502,178 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Lovable Analytics Section */}
+        {analyticsStats && (
+          <>
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <BarChart3 className="w-6 h-6 text-primary" />
+                Analytics de Tráfego
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+              <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-blue-500">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Visitantes
+                  </CardTitle>
+                  <Users className="w-5 h-5 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-500">
+                    {analyticsStats.visitors.toLocaleString('pt-BR')}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Visitantes únicos
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-purple-500">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Pageviews
+                  </CardTitle>
+                  <Eye className="w-5 h-5 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-purple-500">
+                    {analyticsStats.pageviews.toLocaleString('pt-BR')}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Páginas visualizadas
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-green-500">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Duração Média
+                  </CardTitle>
+                  <Clock className="w-5 h-5 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-500">
+                    {analyticsStats.avgDuration}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Tempo médio no site
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-orange-500">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Bounce Rate
+                  </CardTitle>
+                  <TrendingUp className="w-5 h-5 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-orange-500">
+                    {analyticsStats.bounceRate}%
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Taxa de rejeição
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Analytics Details Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              {/* Top Pages */}
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Eye className="w-5 h-5" />
+                    Páginas Mais Visitadas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {analyticsStats.topPages.map((page, idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span className="text-sm truncate flex-1 text-muted-foreground">
+                          {page.path}
+                        </span>
+                        <span className="text-sm font-semibold ml-2">
+                          {page.count.toLocaleString('pt-BR')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Traffic Sources */}
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Target className="w-5 h-5" />
+                    Origem do Tráfego
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {analyticsStats.sources.map((source, idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span className="text-sm truncate flex-1 text-muted-foreground">
+                          {source.source}
+                        </span>
+                        <span className="text-sm font-semibold ml-2">
+                          {source.count.toLocaleString('pt-BR')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Devices */}
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Monitor className="w-5 h-5" />
+                    Dispositivos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {analyticsStats.devices.map((device, idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 flex-1">
+                          {device.device.toLowerCase().includes('mobile') ? (
+                            <Smartphone className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <Monitor className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {device.device}
+                          </span>
+                        </div>
+                        <span className="text-sm font-semibold ml-2">
+                          {device.count.toLocaleString('pt-BR')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+
+        {/* Business Stats Section */}
+        <div className="mb-6">
+          <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <DollarSign className="w-6 h-6 text-accent" />
+            Métricas de Negócio
+          </h3>
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
