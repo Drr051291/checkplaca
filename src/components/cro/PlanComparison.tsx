@@ -44,7 +44,7 @@ export const PlanComparison = ({ onSelectPlan, plate }: PlanComparisonProps) => 
           ))}
           <Button 
             variant="outline" 
-            className="w-full mt-4 border-primary/30 text-foreground bg-background/50 cursor-not-allowed opacity-100" 
+            className="w-full mt-4" 
             disabled
           >
             Plano Atual
@@ -83,7 +83,8 @@ export const PlanComparison = ({ onSelectPlan, plate }: PlanComparisonProps) => 
             </div>
           ))}
           <Button 
-            className="w-full mt-4 bg-gradient-primary hover:opacity-90 transition-opacity shadow-strong"
+            size="lg"
+            className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90 transition-smooth shadow-strong"
             onClick={() => onSelectPlan('completo')}
           >
             <Sparkles className="w-4 h-4 mr-2" />
