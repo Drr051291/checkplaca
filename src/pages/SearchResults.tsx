@@ -1,5 +1,5 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Car, Calendar, CheckCircle } from "lucide-react";
+import { ArrowLeft, Car, Calendar, CheckCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -117,9 +117,32 @@ const SearchResults = () => {
           </div>
 
           {/* Comparação de Planos */}
-          <div className="mb-8">
+          <div className="mb-12">
             <PlanComparison onSelectPlan={handleGetFullReport} plate={plate} />
           </div>
+
+          {/* CTA Intermediário */}
+          <Card className="mb-12 bg-gradient-subtle border-2 border-primary/20">
+            <CardContent className="p-8 text-center">
+              <h3 className="text-2xl font-bold mb-4">
+                🔒 Acesso completo a todas as informações do veículo
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+                Evite surpresas na hora da compra. Tenha acesso ao histórico completo e tome a melhor decisão.
+              </p>
+              <Button 
+                size="lg"
+                onClick={() => handleGetFullReport('completo')}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-strong h-14 px-8 text-lg"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                Desbloquear Relatório Completo - R$ 39,90
+              </Button>
+              <p className="text-xs text-muted-foreground mt-4">
+                ✓ Garantia de 7 dias • ✓ Acesso imediato • ✓ Pagamento seguro
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Garantia */}
           <div className="mb-8">
@@ -141,6 +164,29 @@ const SearchResults = () => {
 
           {/* Trust Badges */}
           <TrustBadges />
+
+          {/* CTA Final */}
+          <div className="mt-12 text-center bg-gradient-hero text-white rounded-lg p-8 shadow-glow">
+            <h3 className="text-3xl font-bold mb-4">
+              Pronto para tomar a melhor decisão?
+            </h3>
+            <p className="text-lg mb-6 opacity-90 max-w-2xl mx-auto">
+              Não compre sem saber o histórico completo. Invista R$ 39,90 agora e economize milhares no futuro.
+            </p>
+            <Button 
+              size="lg"
+              variant="secondary"
+              onClick={() => handleGetFullReport('completo')}
+              className="h-14 px-10 text-lg font-bold shadow-strong hover:scale-105 transition-smooth"
+            >
+              Ver Relatório Completo Agora
+            </Button>
+            <div className="mt-6 flex items-center justify-center gap-6 text-sm">
+              <span>✓ Pagamento 100% seguro</span>
+              <span>✓ Dados atualizados</span>
+              <span>✓ Suporte dedicado</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
