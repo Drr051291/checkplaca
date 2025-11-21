@@ -623,37 +623,39 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)}
-            className="mb-2"
-          >
-            <ArrowLeft className="mr-2" />
-            Voltar
-          </Button>
-          <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-            Checkplaca
-          </h1>
+      <header className="bg-gradient-hero border-b border-border/20 sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-xl md:text-2xl font-bold text-white">
+              Checkplaca
+            </h1>
+          </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-6 md:py-12">
         <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-5 gap-8">
+          <div className="grid md:grid-cols-5 gap-6 md:gap-8">
             {/* Payment Form */}
             <div className="md:col-span-3">
               <Card className="shadow-strong">
-                <CardHeader>
-                  <CardTitle>Finalizar Compra</CardTitle>
-                  <CardDescription>Escolha a forma de pagamento</CardDescription>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl">Finalizar Compra</CardTitle>
+                  <CardDescription>Preencha seus dados para gerar o PIX</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
+                  <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Dados Pessoais */}
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-lg">Dados Pessoais</h3>
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-base">Dados Pessoais</h3>
                       
                       <div>
                         <Label htmlFor="name">Nome Completo</Label>
@@ -679,9 +681,9 @@ const Checkout = () => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label htmlFor="phone">Telefone</Label>
+                          <Label htmlFor="phone" className="text-sm">Telefone</Label>
                           <Input
                             id="phone"
                             type="tel"
@@ -689,10 +691,11 @@ const Checkout = () => {
                             onChange={(e) => handleInputChange('phone', formatPhone(e.target.value))}
                             placeholder="(11) 99999-9999"
                             required
+                            className="h-10"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="cpf">CPF</Label>
+                          <Label htmlFor="cpf" className="text-sm">CPF</Label>
                           <Input
                             id="cpf"
                             type="text"
@@ -700,22 +703,23 @@ const Checkout = () => {
                             onChange={(e) => handleInputChange('cpf', formatCPF(e.target.value))}
                             placeholder="000.000.000-00"
                             required
+                            className="h-10"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* Método de Pagamento */}
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-lg">Forma de Pagamento</h3>
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-base">Forma de Pagamento</h3>
                       
-                      <div className="bg-secondary/20 rounded-lg p-4 space-y-2">
-                        <div className="flex items-start gap-3">
-                          <QrCode className="w-5 h-5 text-primary mt-0.5" />
+                      <div className="bg-secondary/20 rounded-lg p-3 space-y-2">
+                        <div className="flex items-start gap-2">
+                          <QrCode className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                           <div>
-                            <p className="font-semibold">Pagamento via PIX</p>
-                            <p className="text-sm text-muted-foreground">
-                              Aprovação instantânea. Escaneie o QR Code ou use o PIX Copia e Cola.
+                            <p className="font-semibold text-sm">Pagamento via PIX</p>
+                            <p className="text-xs text-muted-foreground">
+                              Aprovação instantânea após pagamento
                             </p>
                           </div>
                         </div>
@@ -725,25 +729,25 @@ const Checkout = () => {
                     <Button
                       type="submit"
                       size="lg"
-                      className="w-full h-14 gradient-primary font-semibold"
+                      className="w-full h-12 md:h-14 gradient-primary font-semibold text-base"
                       disabled={isProcessing}
                     >
                       {isProcessing ? (
                         <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          <Loader2 className="mr-2 h-4 w-4 md:h-5 md:w-5 animate-spin" />
                           Processando...
                         </>
                       ) : (
                         <>
-                          <Lock className="mr-2 h-5 w-5" />
-                          Gerar PIX
+                          <Lock className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                          Gerar PIX - R$ {currentPlan.price.toFixed(2)}
                         </>
                       )}
                     </Button>
 
-                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <Lock className="w-4 h-4" />
-                      <span>Pagamento 100% seguro e criptografado</span>
+                    <div className="flex items-center justify-center gap-2 text-xs md:text-sm text-muted-foreground">
+                      <Lock className="w-3 h-3 md:w-4 md:h-4" />
+                      <span>Pagamento 100% seguro</span>
                     </div>
                   </form>
                 </CardContent>
@@ -752,20 +756,20 @@ const Checkout = () => {
 
             {/* Order Summary */}
             <div className="md:col-span-2">
-              <Card className="shadow-strong sticky top-24">
-                <CardHeader>
-                  <CardTitle>Resumo do Pedido</CardTitle>
+              <Card className="shadow-strong md:sticky md:top-24">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl">Resumo do Pedido</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <h4 className="font-semibold mb-2">{currentPlan.name}</h4>
-                    <Badge variant="secondary" className="mb-3">
+                    <h4 className="font-semibold mb-2 text-base">{currentPlan.name}</h4>
+                    <Badge variant="secondary" className="mb-3 text-xs">
                       {planType === 'premium' ? 'Mais Completo' : 'Popular'}
                     </Badge>
-                    <ul className="space-y-2">
+                    <ul className="space-y-1.5">
                       {currentPlan.features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <CheckCircle className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                        <li key={index} className="flex items-start gap-2 text-xs md:text-sm">
+                          <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-accent mt-0.5 flex-shrink-0" />
                           <span>{feature}</span>
                         </li>
                       ))}
@@ -773,13 +777,13 @@ const Checkout = () => {
                   </div>
 
                   <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-muted-foreground">Placa do Veículo:</span>
+                    <div className="flex justify-between items-center mb-2 text-sm">
+                      <span className="text-muted-foreground">Placa:</span>
                       <span className="font-mono font-bold">{plate}</span>
                     </div>
-                    <div className="flex justify-between items-center text-lg font-bold">
-                      <span>Total:</span>
-                      <span className="text-2xl text-accent">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-base md:text-lg">Total:</span>
+                      <span className="text-xl md:text-2xl text-accent">
                         R$ {currentPlan.price.toFixed(2)}
                       </span>
                     </div>
