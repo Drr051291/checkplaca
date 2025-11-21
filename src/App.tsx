@@ -14,6 +14,7 @@ import AdminBlog from "./pages/AdminBlog";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Sitemap from "./pages/Sitemap";
+import FaviconGenerator from "./pages/FaviconGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/sitemap.xml" element={<Sitemap />} />
+          <Route path="/generate-favicon" element={<FaviconGenerator />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
