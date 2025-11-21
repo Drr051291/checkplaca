@@ -31,6 +31,7 @@ interface AnalyticsStats {
   topPages: { path: string; count: number }[];
   sources: { source: string; count: number }[];
   devices: { device: string; count: number }[];
+  timeSeriesData: { date: string; visitors: number; pageviews: number }[];
 }
 
 interface Customer {
@@ -247,6 +248,31 @@ const AdminDashboard = () => {
             .map(([device, count]) => ({ device, count }))
             .sort((a, b) => b.count - a.count);
 
+          // Time series data
+          const timeSeriesMap = new Map<string, { visitors: Set<string>, pageviews: number }>();
+          analyticsData.pageviews?.forEach((pv: any) => {
+            const dateKey = pv.timestamp?.split('T')[0] || new Date().toISOString().split('T')[0];
+            if (!timeSeriesMap.has(dateKey)) {
+              timeSeriesMap.set(dateKey, { visitors: new Set(), pageviews: 0 });
+            }
+            const existing = timeSeriesMap.get(dateKey)!;
+            existing.pageviews += pv.count || 0;
+            if (pv.visitor_id) existing.visitors.add(pv.visitor_id);
+          });
+
+          const timeSeriesData = Array.from(timeSeriesMap.entries())
+            .map(([date, data]) => ({
+              date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+              visitors: data.visitors.size,
+              pageviews: data.pageviews
+            }))
+            .sort((a, b) => {
+              const [dayA, monthA] = a.date.split('/');
+              const [dayB, monthB] = b.date.split('/');
+              return new Date(`2024-${monthA}-${dayA}`).getTime() - new Date(`2024-${monthB}-${dayB}`).getTime();
+            })
+            .slice(-30);
+
           setAnalyticsStats({
             visitors: totalVisitors,
             pageviews: totalPageviews,
@@ -255,6 +281,7 @@ const AdminDashboard = () => {
             topPages,
             sources,
             devices,
+            timeSeriesData,
           });
         }
 
@@ -582,6 +609,63 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Time Series Chart */}
+            <Card className="mb-6 shadow-soft">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  Evolução de Visitantes e Pageviews
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    visitors: {
+                      label: "Visitantes",
+                      color: "hsl(var(--chart-1))",
+                    },
+                    pageviews: {
+                      label: "Pageviews",
+                      color: "hsl(var(--chart-2))",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={analyticsStats.timeSeriesData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="date" 
+                        className="text-xs"
+                        stroke="hsl(var(--muted-foreground))"
+                      />
+                      <YAxis 
+                        className="text-xs"
+                        stroke="hsl(var(--muted-foreground))"
+                      />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="visitors" 
+                        stroke="hsl(var(--chart-1))" 
+                        strokeWidth={2}
+                        dot={{ fill: "hsl(var(--chart-1))", r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="pageviews" 
+                        stroke="hsl(var(--chart-2))" 
+                        strokeWidth={2}
+                        dot={{ fill: "hsl(var(--chart-2))", r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
 
             {/* Analytics Details Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
