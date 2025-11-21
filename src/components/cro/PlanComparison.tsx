@@ -21,39 +21,9 @@ export const PlanComparison = ({ onSelectPlan, plate }: PlanComparisonProps) => 
   ];
 
   return (
-    <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-      {/* Plano Gratuito */}
-      <Card className="relative opacity-60">
-        <CardHeader className="text-center pb-4">
-          <CardTitle className="text-lg">Gratuito</CardTitle>
-          <div className="text-3xl font-bold mt-2">R$ 0</div>
-          <p className="text-xs text-muted-foreground">Informações básicas</p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {features.map((feature, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm">
-              {feature.free ? (
-                <Check className="w-4 h-4 text-primary shrink-0" />
-              ) : (
-                <X className="w-4 h-4 text-muted-foreground shrink-0" />
-              )}
-              <span className={!feature.free ? "text-muted-foreground" : ""}>
-                {feature.name}
-              </span>
-            </div>
-          ))}
-          <Button 
-            variant="outline" 
-            className="w-full mt-4" 
-            disabled
-          >
-            Plano Atual
-          </Button>
-        </CardContent>
-      </Card>
-
+    <div className="max-w-2xl mx-auto">
       {/* Plano Completo - DESTAQUE */}
-      <Card className="relative border-2 border-primary shadow-glow md:scale-105">
+      <Card className="relative border-2 border-primary shadow-glow">
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <Badge className="bg-primary text-primary-foreground gap-1">
             <Sparkles className="w-3 h-3" />

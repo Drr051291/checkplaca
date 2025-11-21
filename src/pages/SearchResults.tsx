@@ -95,6 +95,45 @@ const SearchResults = () => {
             </CardContent>
           </Card>
 
+          {/* CTA Principal - Acima da dobra */}
+          <Card className="my-8 bg-gradient-hero text-white border-0 shadow-glow">
+            <CardContent className="p-8 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                🔓 Desbloqueie o Relatório Completo
+              </h2>
+              <p className="text-lg md:text-xl mb-6 opacity-95 max-w-2xl mx-auto">
+                Acesse histórico de roubo/furto, débitos, multas, valor FIPE, recalls e muito mais!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-6">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Relatório em segundos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Garantia de 7 dias</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Pagamento seguro</span>
+                </div>
+              </div>
+              <Button 
+                size="lg"
+                variant="secondary"
+                onClick={() => handleGetFullReport('completo')}
+                className="h-16 px-12 text-xl font-bold shadow-strong hover:scale-105 transition-smooth bg-white text-primary hover:bg-white/90"
+              >
+                <Sparkles className="w-6 h-6 mr-2" />
+                Ver Relatório Completo - R$ 39,90
+              </Button>
+              <p className="text-sm mt-4 opacity-90">
+                <span className="line-through mr-2">R$ 69,90</span>
+                <Badge className="bg-destructive text-destructive-foreground">-43% OFF</Badge>
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Prova Social */}
           <div className="mb-8">
             <SocialProof />
@@ -108,11 +147,10 @@ const SearchResults = () => {
           {/* Título da Seção */}
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Quer ver o relatório completo?
+              O que está incluído no relatório?
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Desbloqueie informações detalhadas: FIPE, roubo/furto, histórico de leilão, 
-              gravames e recalls
+              Todas as informações que você precisa para tomar a melhor decisão
             </p>
           </div>
 
