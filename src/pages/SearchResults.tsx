@@ -53,43 +53,73 @@ const SearchResults = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           {/* Basic Info Card */}
-          <Card className="shadow-strong mb-8">
-            <CardHeader className="bg-gradient-primary text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-3">
-                <Car className="w-8 h-8" />
-                <div>
-                  <div className="text-sm opacity-90">Placa consultada</div>
-                  <div className="text-3xl font-bold tracking-wider">{basicData.plate}</div>
+          <Card className="shadow-strong mb-6">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-gradient-primary text-white p-3 rounded-lg">
+                  <Car className="w-6 h-6" />
                 </div>
-              </CardTitle>
+                <div>
+                  <div className="text-xs text-muted-foreground">Placa consultada</div>
+                  <div className="text-2xl font-bold tracking-wider">{basicData.plate}</div>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Marca</div>
-                  <div className="text-lg font-semibold">{basicData.brand}</div>
+                  <div className="text-xs text-muted-foreground mb-1">Marca</div>
+                  <div className="font-semibold">{basicData.brand}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Modelo</div>
-                  <div className="text-lg font-semibold">{basicData.model}</div>
+                  <div className="text-xs text-muted-foreground mb-1">Modelo</div>
+                  <div className="font-semibold">{basicData.model}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Ano</div>
-                  <div className="text-lg font-semibold flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-primary" />
+                  <div className="text-xs text-muted-foreground mb-1">Ano</div>
+                  <div className="font-semibold flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" />
                     {basicData.year}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Cor</div>
-                  <div className="text-lg font-semibold">{basicData.color}</div>
+                  <div className="text-xs text-muted-foreground mb-1">Cor</div>
+                  <div className="font-semibold">{basicData.color}</div>
                 </div>
-                <div className="md:col-span-2">
-                  <div className="text-sm text-muted-foreground mb-1">Status</div>
-                  <Badge className="bg-accent text-accent-foreground">
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    {basicData.status}
-                  </Badge>
+              </div>
+
+              {/* CTA Principal Integrado */}
+              <div className="bg-gradient-hero text-white rounded-lg p-6 -mx-6 -mb-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg mb-1">Relatório Completo Disponível</h3>
+                    <p className="text-sm opacity-90">
+                      Histórico de roubo, débitos, FIPE, recalls e muito mais
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 mb-4 text-sm">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span>Acesso imediato</span>
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span>100% seguro</span>
+                </div>
+
+                <Button 
+                  size="lg"
+                  onClick={() => handleGetFullReport('completo')}
+                  className="w-full bg-white text-primary hover:bg-white/90 font-bold h-14 text-lg shadow-strong hover:scale-105 transition-smooth"
+                >
+                  Ver Relatório Completo - R$ 39,90
+                </Button>
+                
+                <div className="text-center mt-3 text-sm opacity-90">
+                  <span className="line-through mr-2">R$ 69,90</span>
+                  <span className="font-bold">-43% OFF por tempo limitado</span>
                 </div>
               </div>
             </CardContent>
