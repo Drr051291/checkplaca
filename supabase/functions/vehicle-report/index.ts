@@ -88,7 +88,7 @@ serve(async (req) => {
       const reportData = {
         plate,
         vehicleInfo: {
-          marca_modelo: dadosVeiculo.marca || dadosVeiculo.modelo,
+          marca_modelo: `${dadosVeiculo.marca || ''} ${dadosVeiculo.modelo || ''}`.trim() || 'N/D',
           ano_fabricacao: dadosVeiculo.ano_fabricacao,
           ano_modelo: dadosVeiculo.ano_modelo,
           chassi: dadosVeiculo.chassi,
@@ -340,7 +340,7 @@ serve(async (req) => {
     const reportData = {
       plate,
       vehicleInfo: {
-        marca_modelo: dadosVeiculo.marca || dadosVeiculo.marca_modelo || dadosVeiculo.modelo,
+        marca_modelo: `${dadosVeiculo.marca || ''} ${dadosVeiculo.modelo || ''}`.trim() || 'N/D',
         ano_fabricacao: dadosVeiculo.ano_fabricacao,
         ano_modelo: dadosVeiculo.ano_modelo,
         chassi: dadosVeiculo.chassi,
