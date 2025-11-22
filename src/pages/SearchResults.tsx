@@ -74,11 +74,11 @@ const SearchResults = () => {
     return null;
   }
 
-  const vehicleInfo = reportData?.dados?.informacoes_veiculo?.dados_veiculo || {};
+  const vehicleInfo = reportData?.vehicleInfo || {};
   const basicData = {
     plate: vehicleInfo.placa || plate,
-    brand: vehicleInfo.marca || "N/D",
-    model: vehicleInfo.modelo || "N/D",
+    brand: vehicleInfo.marca_modelo?.split(' ')[0] || "N/D",
+    model: vehicleInfo.marca_modelo?.split(' ').slice(1).join(' ') || vehicleInfo.marca_modelo || "N/D",
     year: vehicleInfo.ano_fabricacao && vehicleInfo.ano_modelo 
       ? `${vehicleInfo.ano_fabricacao}/${vehicleInfo.ano_modelo}`
       : "N/D",
