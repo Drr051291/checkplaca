@@ -1,5 +1,5 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Car, Calendar, CheckCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, Car, Calendar, CheckCircle, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,20 +10,79 @@ import { Testimonials } from "@/components/cro/Testimonials";
 import { MoneyBackGuarantee } from "@/components/cro/MoneyBackGuarantee";
 import { TrustBadges } from "@/components/cro/TrustBadges";
 import { FAQ } from "@/components/cro/FAQ";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import CarBrandLogo from "@/components/CarBrandLogo";
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const plate = searchParams.get('plate') || '';
   const reportId = searchParams.get('reportId') || '';
+  const [loading, setLoading] = useState(true);
+  const [reportData, setReportData] = useState<any>(null);
+  const { toast } = useToast();
 
-  // Mock data for demonstration
+  useEffect(() => {
+    const fetchReport = async () => {
+      if (!reportId) {
+        navigate('/');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('vehicle_reports')
+          .select('*')
+          .eq('id', reportId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setReportData(data.report_data);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar relatório:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os dados do veículo.",
+          variant: "destructive",
+        });
+        navigate('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReport();
+  }, [reportId, navigate, toast]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Carregando dados do veículo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!reportData) {
+    return null;
+  }
+
+  const vehicleInfo = reportData.vehicleInfo || {};
   const basicData = {
-    plate: plate,
-    brand: "VOLKSWAGEN",
-    model: "GOL 1.6 TOTAL FLEX",
-    year: "2018/2019",
-    color: "BRANCO",
+    plate: vehicleInfo.placa || plate,
+    brand: vehicleInfo.marca_modelo?.split(' ')[0] || "N/D",
+    model: vehicleInfo.marca_modelo || "N/D",
+    year: vehicleInfo.ano_fabricacao && vehicleInfo.ano_modelo 
+      ? `${vehicleInfo.ano_fabricacao}/${vehicleInfo.ano_modelo}`
+      : "N/D",
+    color: vehicleInfo.cor || "N/D",
     status: "Ativo"
   };
 
