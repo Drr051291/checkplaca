@@ -127,13 +127,6 @@ const SearchResults = () => {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              {/* Logo da Marca */}
-              {basicData.brand !== "N/D" && (
-                <div className="mb-6 flex justify-center">
-                  <CarBrandLogo brandName={basicData.brand} className="opacity-90" />
-                </div>
-              )}
-              
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Marca</div>
