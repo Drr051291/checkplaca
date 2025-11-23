@@ -22,6 +22,46 @@ serve(async (req) => {
     console.log('Consultando veículo na API Consultar Placa:', plate);
     console.log('Tipo de plano:', planType || 'basico (consulta gratuita)');
 
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 🔍 VERIFICAR CACHE: Buscar relatório existente nas últimas 24 horas
+    const cacheDuration = 24 * 60 * 60 * 1000; // 24 horas em ms
+    const cacheThreshold = new Date(Date.now() - cacheDuration).toISOString();
+    
+    console.log('🔍 Verificando cache para placa:', plate);
+    const { data: cachedReport, error: cacheError } = await supabase
+      .from('vehicle_reports')
+      .select('*')
+      .eq('plate', plate)
+      .gte('created_at', cacheThreshold)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (cachedReport && !cacheError) {
+      console.log('✅ Cache HIT! Retornando relatório existente:', cachedReport.id);
+      console.log('📅 Relatório criado em:', cachedReport.created_at);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          reportId: cachedReport.id,
+          data: cachedReport.report_data,
+          cached: true,
+          cachedAt: cachedReport.created_at,
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
+
+    console.log('❌ Cache MISS. Prosseguindo com nova consulta à API...');
+
     const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY')?.trim();
     const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL')?.trim();
     if (!apiKey || !apiEmail) {
@@ -31,11 +71,6 @@ serve(async (req) => {
     console.log('API Key configurada:', 'Sim');
     console.log('Email configurado:', 'Sim');
     console.log('Tamanho da API Key:', apiKey.length);
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Autenticação Basic: email:apiKey (conforme documentação)
     const credentials = `${apiEmail}:${apiKey}`;
