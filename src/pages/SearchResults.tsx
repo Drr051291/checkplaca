@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import CarBrandLogo from "@/components/CarBrandLogo";
+import { trackCTAClick, trackViewItem, createProductData } from "@/lib/analytics";
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
@@ -42,6 +43,10 @@ const SearchResults = () => {
 
         if (data) {
           setReportData(data.report_data);
+          
+          // Track view_item event when report is loaded
+          const product = createProductData('completo', plate);
+          trackViewItem(product);
         }
       } catch (error) {
         console.error('Erro ao buscar relatório:', error);
@@ -57,7 +62,7 @@ const SearchResults = () => {
     };
 
     fetchReport();
-  }, [reportId, navigate, toast]);
+  }, [reportId, navigate, toast, plate]);
 
   if (loading) {
     return (
@@ -87,6 +92,9 @@ const SearchResults = () => {
   };
 
   const handleGetFullReport = (planType: 'completo' = 'completo') => {
+    // Track CTA click
+    trackCTAClick('Desbloquear Relatório Completo', 'search_results_page', 39.90);
+    
     navigate(`/checkout?reportId=${reportId}&plan=${planType}&plate=${plate}`);
   };
 
@@ -216,7 +224,10 @@ const SearchResults = () => {
               <Button 
                 size="lg"
                 variant="secondary"
-                onClick={() => handleGetFullReport('completo')}
+                onClick={() => {
+                  trackCTAClick('Ver Relatório Completo - Hero CTA', 'hero_section', 39.90);
+                  handleGetFullReport('completo');
+                }}
                 className="w-full sm:w-auto h-12 md:h-16 px-6 md:px-12 text-base md:text-xl font-bold shadow-strong bg-white text-primary hover:bg-white/90"
               >
                 <Sparkles className="w-5 h-5 md:w-6 md:h-6 mr-2" />
