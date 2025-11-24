@@ -225,6 +225,37 @@ export const trackSearch = (plate: string) => {
   fbq('track', 'Search', {
     search_string: plate,
   });
+  
+  console.log('[Analytics] Search tracked:', plate);
+};
+
+/**
+ * Evento: Clique em CTA
+ * Rastreia cliques em botões de Call-to-Action
+ */
+export const trackCTAClick = (ctaName: string, ctaLocation: string, value?: number) => {
+  // GA4 - DataLayer
+  pushToDataLayer({
+    event: 'cta_click',
+    cta_name: ctaName,
+    cta_location: ctaLocation,
+    value: value || 0,
+  });
+
+  // GA4 - gtag
+  gtag('event', 'cta_click', {
+    cta_name: ctaName,
+    cta_location: ctaLocation,
+    value: value || 0,
+  });
+
+  // Meta Pixel
+  fbq('trackCustom', 'CTAClick', {
+    cta_name: ctaName,
+    cta_location: ctaLocation,
+  });
+  
+  console.log('[Analytics] CTA Click tracked:', ctaName, ctaLocation);
 };
 
 /**

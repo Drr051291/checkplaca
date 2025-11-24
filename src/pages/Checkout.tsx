@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { trackBeginCheckout, trackAddPaymentInfo, trackLead, trackPixGenerated, createProductData, trackPurchase } from "@/lib/analytics";
+import { trackBeginCheckout, trackAddPaymentInfo, trackLead, trackPixGenerated, createProductData, trackPurchase, trackCTAClick } from "@/lib/analytics";
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
@@ -118,6 +118,9 @@ const Checkout = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Track CTA Click for form submission
+    trackCTAClick('Gerar PIX', 'checkout_form', currentPlan.price);
     
     if (!formData.name || !formData.email || !formData.phone || !formData.cpf) {
       toast({
