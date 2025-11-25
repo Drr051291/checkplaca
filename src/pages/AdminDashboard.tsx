@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3, Monitor, Smartphone, Clock } from "lucide-react";
+import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3, Monitor, Smartphone, Clock, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -473,6 +473,14 @@ const AdminDashboard = () => {
               Checkplaca - Admin
             </h1>
             <div className="flex items-center gap-4">
+              <Button 
+                variant="outline"
+                onClick={() => navigate("/admin/customer-sync")}
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+              >
+                <RefreshCw className="mr-2 w-4 h-4" />
+                Sincronizar Clientes
+              </Button>
               <Button 
                 variant="outline"
                 onClick={() => navigate("/admin/blog")}
