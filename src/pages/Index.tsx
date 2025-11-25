@@ -4,9 +4,13 @@ import { HeroSection } from "@/components/HeroSection";
 import { ReportExampleSection } from "@/components/ReportExampleSection";
 import { IncludedSection } from "@/components/IncludedSection";
 import { LatestBlogPosts } from "@/components/LatestBlogPosts";
+import { useTrackingParams } from "@/hooks/useTrackingParams";
 
 const Index = () => {
   const navigate = useNavigate();
+  
+  // Captura parâmetros de rastreamento (UTM, referrer, etc.)
+  useTrackingParams();
 
   return (
     <div className="min-h-screen bg-background">
