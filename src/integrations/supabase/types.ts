@@ -206,13 +206,20 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          landing_page: string | null
           name: string
           payment_id: string | null
           phone: string
           plan_type: string
           plate: string
+          referrer: string | null
           report_id: string
           updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           amount: number
@@ -220,13 +227,20 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          landing_page?: string | null
           name: string
           payment_id?: string | null
           phone: string
           plan_type: string
           plate: string
+          referrer?: string | null
           report_id: string
           updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           amount?: number
@@ -234,13 +248,20 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          landing_page?: string | null
           name?: string
           payment_id?: string | null
           phone?: string
           plan_type?: string
           plate?: string
+          referrer?: string | null
           report_id?: string
           updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {

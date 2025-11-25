@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { trackBeginCheckout, trackAddPaymentInfo, trackLead, trackPixGenerated, createProductData, trackPurchase, trackCTAClick } from "@/lib/analytics";
+import { getStoredTrackingParams } from "@/hooks/useTrackingParams";
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
@@ -170,6 +171,9 @@ const Checkout = () => {
         try {
           const { data: userData } = await supabase.auth.getUser();
           
+          // Recupera parâmetros de tracking
+          const trackingParams = getStoredTrackingParams();
+          
           const { error: customerError } = await supabase
             .from('customers')
             .insert({
@@ -181,11 +185,21 @@ const Checkout = () => {
               cpf: formData.cpf.replace(/\D/g, ''),
               plate: plate,
               plan_type: planType,
-              amount: currentPlan.price
+              amount: currentPlan.price,
+              // Adiciona dados de tracking
+              utm_source: trackingParams?.utm_source || null,
+              utm_medium: trackingParams?.utm_medium || null,
+              utm_campaign: trackingParams?.utm_campaign || null,
+              utm_term: trackingParams?.utm_term || null,
+              utm_content: trackingParams?.utm_content || null,
+              referrer: trackingParams?.referrer || null,
+              landing_page: trackingParams?.landing_page || null,
             });
           
           if (customerError) {
             console.error('[Checkout] Erro ao salvar dados do cliente:', customerError);
+          } else {
+            console.log('[Checkout] Dados do cliente salvos com tracking:', trackingParams);
           }
         } catch (customerSaveError) {
           console.error('[Checkout] Erro ao salvar dados do cliente:', customerSaveError);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3, Monitor, Smartphone, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,13 @@ interface Customer {
   plate: string;
   amount: number;
   created_at: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_term?: string;
+  utm_content?: string;
+  referrer?: string;
+  landing_page?: string;
 }
 
 interface ChartData {
@@ -399,7 +407,7 @@ const AdminDashboard = () => {
     }
 
     const csvContent = [
-      ['Nome', 'Email', 'Telefone', 'CPF', 'Placa', 'Valor', 'Data'],
+      ['Nome', 'Email', 'Telefone', 'CPF', 'Placa', 'Valor', 'Data', 'Origem (Source)', 'Mídia (Medium)', 'Campanha', 'Termo', 'Conteúdo', 'Referrer', 'Landing Page'],
       ...customers.map(c => [
         c.name,
         c.email,
@@ -407,7 +415,14 @@ const AdminDashboard = () => {
         c.cpf,
         c.plate,
         `R$ ${c.amount.toFixed(2)}`,
-        new Date(c.created_at).toLocaleString('pt-BR')
+        new Date(c.created_at).toLocaleString('pt-BR'),
+        c.utm_source || 'Direto',
+        c.utm_medium || '-',
+        c.utm_campaign || '-',
+        c.utm_term || '-',
+        c.utm_content || '-',
+        c.referrer || '-',
+        c.landing_page || '-'
       ])
     ].map(row => row.join(';')).join('\n');
 
@@ -951,8 +966,8 @@ const AdminDashboard = () => {
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Telefone</TableHead>
-                    <TableHead>CPF</TableHead>
                     <TableHead>Placa</TableHead>
+                    <TableHead>Origem</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Data</TableHead>
                   </TableRow>
@@ -964,8 +979,29 @@ const AdminDashboard = () => {
                         <TableCell className="font-medium">{customer.name}</TableCell>
                         <TableCell>{customer.email}</TableCell>
                         <TableCell>{customer.phone}</TableCell>
-                        <TableCell className="font-mono">{customer.cpf}</TableCell>
                         <TableCell className="font-mono font-bold">{customer.plate}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {customer.utm_source && (
+                              <Badge variant="secondary" className="text-xs">
+                                {customer.utm_source}
+                              </Badge>
+                            )}
+                            {customer.utm_medium && (
+                              <div className="text-xs text-muted-foreground">
+                                Mídia: {customer.utm_medium}
+                              </div>
+                            )}
+                            {customer.utm_campaign && (
+                              <div className="text-xs text-muted-foreground">
+                                Campanha: {customer.utm_campaign}
+                              </div>
+                            )}
+                            {!customer.utm_source && !customer.utm_medium && !customer.utm_campaign && (
+                              <span className="text-xs text-muted-foreground">Direto</span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right font-semibold text-accent">
                           R$ {customer.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
