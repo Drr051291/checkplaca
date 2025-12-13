@@ -792,9 +792,58 @@ const Checkout = () => {
                       type="button"
                       variant="outline"
                       className="w-full mt-2 border-yellow-500 text-yellow-600 hover:bg-yellow-50"
-                      onClick={() => navigate(`/report?id=${reportId}`)}
+                      disabled={isProcessing}
+                      onClick={async () => {
+                        try {
+                          setIsProcessing(true);
+                          
+                          // 1. Cria pagamento fake como 'paid'
+                          const { error: paymentError } = await supabase.from('payments').insert({
+                            report_id: reportId,
+                            status: 'paid',
+                            plan_type: 'completo',
+                            amount: 39.90,
+                            payment_method: 'test',
+                            asaas_payment_id: `test_${Date.now()}`,
+                            asaas_customer_id: `test_customer_${Date.now()}`
+                          });
+                          
+                          if (paymentError) {
+                            console.error('Erro ao criar pagamento fake:', paymentError);
+                          }
+                          
+                          // 2. Gera relatório completo via edge function
+                          const { data, error } = await supabase.functions.invoke('vehicle-report', {
+                            body: { plate, planType: 'completo' }
+                          });
+                          
+                          if (error) {
+                            console.error('Erro ao gerar relatório:', error);
+                            toast({
+                              title: "Erro no teste",
+                              description: "Não foi possível gerar o relatório completo",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          
+                          console.log('Relatório completo gerado:', data);
+                          
+                          // 3. Redireciona para relatório
+                          navigate(`/report?id=${reportId}`);
+                        } catch (error) {
+                          console.error('Erro no teste:', error);
+                          toast({
+                            title: "Erro",
+                            description: "Falha ao processar teste",
+                            variant: "destructive"
+                          });
+                        } finally {
+                          setIsProcessing(false);
+                        }
+                      }}
                     >
-                      🧪 Pular para Teste (Dev Only)
+                      🧪 {isProcessing ? 'Processando...' : 'Pular para Teste (Dev Only)'}
                     </Button>
                   </form>
                 </CardContent>
