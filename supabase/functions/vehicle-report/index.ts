@@ -27,7 +27,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 🔍 VERIFICAR CACHE: Buscar relatório existente nas últimas 24 horas
+    // 🔍 VERIFICAR CACHE: Buscar relatório básico existente nas últimas 24 horas
     const cacheDuration = 24 * 60 * 60 * 1000; // 24 horas em ms
     const cacheThreshold = new Date(Date.now() - cacheDuration).toISOString();
     
@@ -41,8 +41,9 @@ serve(async (req) => {
       .limit(1)
       .single();
 
-    if (cachedReport && !cacheError) {
-      console.log('✅ Cache HIT! Retornando relatório existente:', cachedReport.id);
+    // ⚠️ Importante: só reutilizamos cache para consultas gratuitas (sem planType)
+    if (!planType && cachedReport && !cacheError) {
+      console.log('✅ Cache HIT! Retornando relatório básico existente:', cachedReport.id);
       console.log('📅 Relatório criado em:', cachedReport.created_at);
       
       return new Response(
@@ -60,7 +61,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('❌ Cache MISS. Prosseguindo com nova consulta à API...');
+    console.log('❌ Cache MISS ou plano pago, prosseguindo com nova consulta à API...');
 
     const apiKey = Deno.env.get('CONSULTAR_PLACA_API_KEY')?.trim();
     const apiEmail = Deno.env.get('CONSULTAR_PLACA_EMAIL')?.trim();
