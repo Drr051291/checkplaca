@@ -786,6 +786,16 @@ const Checkout = () => {
                       <Lock className="w-3 h-3 md:w-4 md:h-4" />
                       <span>Pagamento 100% seguro</span>
                     </div>
+
+                    {/* Botão de teste - REMOVER EM PRODUÇÃO */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full mt-2 border-yellow-500 text-yellow-600 hover:bg-yellow-50"
+                      onClick={() => navigate(`/report?id=${reportId}`)}
+                    >
+                      🧪 Pular para Teste (Dev Only)
+                    </Button>
                   </form>
                 </CardContent>
               </Card>
