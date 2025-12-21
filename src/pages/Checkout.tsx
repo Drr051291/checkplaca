@@ -37,7 +37,7 @@ const Checkout = () => {
   const planDetails = {
     completo: {
       name: 'Relatório Completo',
-      price: 39.90,
+      price: 17.90,
       features: [
         'Dados completos do veículo',
         'Histórico de sinistros',
@@ -48,7 +48,7 @@ const Checkout = () => {
     },
     premium: {
       name: 'Relatório Premium Plus',
-      price: 39.90,
+      price: 17.90,
       features: [
         'Tudo do plano Completo',
         'Histórico de leilão',
@@ -802,7 +802,7 @@ const Checkout = () => {
                             report_id: reportId,
                             status: 'paid',
                             plan_type: 'completo',
-                            amount: 39.90,
+                            amount: 17.90,
                             payment_method: 'test',
                             asaas_payment_id: `test_${Date.now()}`,
                             asaas_customer_id: `test_customer_${Date.now()}`

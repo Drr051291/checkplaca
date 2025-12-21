@@ -590,9 +590,9 @@ const Report = () => {
                             <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
                               <Sparkles className="w-8 h-8 text-primary" />
                             </div>
-                            <CardTitle className="text-2xl mb-2">Relatório Completo - Plano Bronze</CardTitle>
+                            <CardTitle className="text-2xl mb-2">Relatório Completo</CardTitle>
                             <div className="text-5xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-                              R$ 39,90
+                              R$ 17,90
                             </div>
                           </div>
                         </CardHeader>

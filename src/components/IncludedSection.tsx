@@ -26,7 +26,7 @@ export const IncludedSection = () => {
               Relatório completo por apenas
             </p>
             <p className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-              R$ 39,90
+              R$ 17,90
             </p>
           </div>
 
