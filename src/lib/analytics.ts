@@ -316,14 +316,14 @@ export const createProductData = (
     completo: {
       item_id: 'plan_completo',
       item_name: 'Relatório Completo',
-      price: 39.90,
+      price: 17.90,
       item_category: 'Relatório Veicular',
       item_variant: 'Completo',
     },
     premium: {
       item_id: 'plan_premium',
       item_name: 'Relatório Premium Plus',
-      price: 69.90,
+      price: 17.90,
       item_category: 'Relatório Veicular',
       item_variant: 'Premium',
     },

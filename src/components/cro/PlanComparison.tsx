@@ -33,11 +33,11 @@ export const PlanComparison = ({ onSelectPlan, plate }: PlanComparisonProps) => 
         <CardHeader className="text-center pb-4 pt-6 bg-gradient-subtle">
           <CardTitle className="text-xl">Completo</CardTitle>
           <div className="flex items-center justify-center gap-2 mt-2">
-            <span className="text-lg line-through text-muted-foreground">R$ 69,90</span>
-            <div className="text-4xl font-bold text-primary">R$ 39,90</div>
+            <span className="text-lg line-through text-muted-foreground">R$ 34,90</span>
+            <div className="text-4xl font-bold text-primary">R$ 17,90</div>
           </div>
           <p className="text-xs text-muted-foreground">Relatório completo detalhado</p>
-          <Badge variant="destructive" className="mt-2">-43% OFF</Badge>
+          <Badge variant="destructive" className="mt-2">-49% OFF</Badge>
         </CardHeader>
         <CardContent className="space-y-3">
           {features.map((feature, i) => (

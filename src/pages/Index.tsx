@@ -68,7 +68,7 @@ const Index = () => {
             Consulte seu veículo agora
           </h3>
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 opacity-90 max-w-2xl mx-auto px-4">
-            Busca básica gratuita ou relatório completo por apenas R$ 39,90
+            Busca básica gratuita ou relatório completo por apenas R$ 17,90
           </p>
           <Button 
             size="lg"

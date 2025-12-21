@@ -93,7 +93,7 @@ const SearchResults = () => {
 
   const handleGetFullReport = (planType: 'completo' = 'completo') => {
     // Track CTA click
-    trackCTAClick('Desbloquear Relatório Completo', 'search_results_page', 39.90);
+    trackCTAClick('Desbloquear Relatório Completo', 'search_results_page', 17.90);
     
     navigate(`/checkout?reportId=${reportId}&plan=${planType}&plate=${plate}`);
   };
@@ -187,12 +187,12 @@ const SearchResults = () => {
                   onClick={() => handleGetFullReport('completo')}
                   className="w-full bg-white text-primary hover:bg-white/90 font-bold h-12 md:h-14 text-base md:text-lg shadow-strong"
                 >
-                  <span className="truncate">Ver Relatório - R$ 39,90</span>
+                  <span className="truncate">Ver Relatório - R$ 17,90</span>
                 </Button>
                 
                 <div className="text-center mt-3 text-xs md:text-sm opacity-90">
-                  <span className="line-through mr-2">R$ 69,90</span>
-                  <span className="font-bold">-43% OFF</span>
+                  <span className="line-through mr-2">R$ 34,90</span>
+                  <span className="font-bold">-49% OFF</span>
                 </div>
               </div>
             </CardContent>
@@ -225,17 +225,17 @@ const SearchResults = () => {
                 size="lg"
                 variant="secondary"
                 onClick={() => {
-                  trackCTAClick('Ver Relatório Completo - Hero CTA', 'hero_section', 39.90);
+                  trackCTAClick('Ver Relatório Completo - Hero CTA', 'hero_section', 17.90);
                   handleGetFullReport('completo');
                 }}
                 className="w-full sm:w-auto h-12 md:h-16 px-6 md:px-12 text-base md:text-xl font-bold shadow-strong bg-white text-primary hover:bg-white/90"
               >
                 <Sparkles className="w-5 h-5 md:w-6 md:h-6 mr-2" />
-                <span className="truncate">Ver Relatório - R$ 39,90</span>
+                <span className="truncate">Ver Relatório - R$ 17,90</span>
               </Button>
               <p className="text-xs md:text-sm mt-3 md:mt-4 opacity-90">
-                <span className="line-through mr-2">R$ 69,90</span>
-                <Badge className="bg-destructive text-destructive-foreground text-xs">-43% OFF</Badge>
+                <span className="line-through mr-2">R$ 34,90</span>
+                <Badge className="bg-destructive text-destructive-foreground text-xs">-49% OFF</Badge>
               </p>
             </CardContent>
           </Card>
@@ -280,7 +280,7 @@ const SearchResults = () => {
                 className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shadow-strong h-12 md:h-14 px-6 md:px-8 text-base md:text-lg"
               >
                 <Sparkles className="w-4 h-4 md:w-5 md:h-5 mr-2" />
-                <span className="truncate">Desbloquear - R$ 39,90</span>
+                <span className="truncate">Desbloquear - R$ 17,90</span>
               </Button>
               <p className="text-xs md:text-sm text-muted-foreground mt-3 md:mt-4">
                 ✓ Garantia de 7 dias • ✓ Acesso imediato • ✓ Pagamento seguro
@@ -315,7 +315,7 @@ const SearchResults = () => {
               Pronto para tomar a melhor decisão?
             </h3>
             <p className="text-sm md:text-lg mb-4 md:mb-6 opacity-90 max-w-2xl mx-auto">
-              Não compre sem saber o histórico completo. Invista R$ 39,90 agora e economize milhares no futuro.
+              Não compre sem saber o histórico completo. Invista R$ 17,90 agora e economize milhares no futuro.
             </p>
             <Button 
               size="lg"
