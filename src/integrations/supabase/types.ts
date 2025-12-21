@@ -280,6 +280,94 @@ export type Database = {
           },
         ]
       }
+      enrichments: {
+        Row: {
+          enriched_at: string | null
+          fipe_cost_cents: number | null
+          fipe_raw: Json | null
+          id: string
+          plate_query_id: string
+          renainf_cost_cents: number | null
+          renainf_raw: Json | null
+        }
+        Insert: {
+          enriched_at?: string | null
+          fipe_cost_cents?: number | null
+          fipe_raw?: Json | null
+          id?: string
+          plate_query_id: string
+          renainf_cost_cents?: number | null
+          renainf_raw?: Json | null
+        }
+        Update: {
+          enriched_at?: string | null
+          fipe_cost_cents?: number | null
+          fipe_raw?: Json | null
+          id?: string
+          plate_query_id?: string
+          renainf_cost_cents?: number | null
+          renainf_raw?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrichments_plate_query_id_fkey"
+            columns: ["plate_query_id"]
+            isOneToOne: true
+            referencedRelation: "plate_queries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          amount_cents: number
+          asaas_customer_id: string | null
+          asaas_payment_id: string | null
+          created_at: string
+          id: string
+          paid_at: string | null
+          payment_status: string | null
+          pix_txid: string | null
+          plate_query_id: string
+          provider_total_cost_cents: number | null
+          public_access_token: string | null
+        }
+        Insert: {
+          amount_cents: number
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          payment_status?: string | null
+          pix_txid?: string | null
+          plate_query_id: string
+          provider_total_cost_cents?: number | null
+          public_access_token?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          payment_status?: string | null
+          pix_txid?: string | null
+          plate_query_id?: string
+          provider_total_cost_cents?: number | null
+          public_access_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_plate_query_id_fkey"
+            columns: ["plate_query_id"]
+            isOneToOne: false
+            referencedRelation: "plate_queries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -322,6 +410,39 @@ export type Database = {
           status?: string
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      plate_queries: {
+        Row: {
+          basic_cost_cents: number | null
+          basic_raw: Json | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          placa: string
+          preview: Json | null
+          status: string | null
+        }
+        Insert: {
+          basic_cost_cents?: number | null
+          basic_raw?: Json | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          placa: string
+          preview?: Json | null
+          status?: string | null
+        }
+        Update: {
+          basic_cost_cents?: number | null
+          basic_raw?: Json | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          placa?: string
+          preview?: Json | null
+          status?: string | null
         }
         Relationships: []
       }
