@@ -48,12 +48,21 @@ export const HeroSection = () => {
       }
 
       if (data.success) {
+        const preview = data.preview || {};
         toast({
           title: "Veículo encontrado!",
           description: "Confira os dados básicos do veículo.",
         });
-        // Navigate to preview page with plateQueryId
-        navigate(`/preview?plateQueryId=${data.plateQueryId}&placa=${cleanedPlate}`);
+        // Navigate to preview page with all preview data
+        const params = new URLSearchParams({
+          id: data.plateQueryId,
+          placa: cleanedPlate,
+          marca: preview.marca || 'N/D',
+          modelo: preview.modelo || 'N/D',
+          ano: preview.ano || 'N/D',
+          cor: preview.cor || 'N/D',
+        });
+        navigate(`/preview?${params.toString()}`);
       } else {
         throw new Error(data.error || 'Erro ao processar consulta');
       }
