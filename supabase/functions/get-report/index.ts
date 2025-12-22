@@ -6,6 +6,71 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Robust price parsing utility
+function parsePriceToNumber(input: unknown): number | null {
+  if (input === null || input === undefined) return null;
+  
+  if (typeof input === 'number') {
+    return isNaN(input) ? null : input;
+  }
+  
+  if (typeof input === 'string') {
+    let cleaned = input.trim();
+    if (!cleaned) return null;
+    
+    // Remove currency symbols and spaces
+    cleaned = cleaned.replace(/R\$\s*/gi, '').trim();
+    
+    // Handle different formats:
+    // "43208.00" (dot decimal - API format)
+    // "43.208,00" (pt-BR format with thousand separator)
+    // "130,16" (comma decimal)
+    
+    const hasDot = cleaned.includes('.');
+    const hasComma = cleaned.includes(',');
+    
+    let numericValue: number;
+    
+    if (hasDot && hasComma) {
+      // Both present: "43.208,00" -> pt-BR format, dot is thousand separator
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+      numericValue = parseFloat(cleaned);
+    } else if (hasComma && !hasDot) {
+      // Only comma: "130,16" -> comma is decimal separator
+      cleaned = cleaned.replace(',', '.');
+      numericValue = parseFloat(cleaned);
+    } else {
+      // Only dot or no separator: "43208.00" or "43208"
+      numericValue = parseFloat(cleaned);
+    }
+    
+    return isNaN(numericValue) ? null : numericValue;
+  }
+  
+  return null;
+}
+
+// Format number as BRL currency
+function formatBRL(value: number | null | undefined): string {
+  if (value === null || value === undefined || isNaN(value)) {
+    return 'N/D';
+  }
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
+}
+
+// Format month reference from "2025_04" to "04/2025"
+function formatMesReferencia(mesRef: string | null | undefined): string {
+  if (!mesRef) return 'N/D';
+  const parts = mesRef.split('_');
+  if (parts.length === 2) {
+    return `${parts[1]}/${parts[0]}`;
+  }
+  return mesRef;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -289,7 +354,7 @@ function parseFipeData(fipeRaw: any, vehicleModelo: string) {
   if (!fipeRaw || fipeRaw.status !== 'ok') {
     return {
       found: false,
-      message: 'Não foi possível localizar um preço FIPE para esta combinação. Isso pode acontecer quando há divergência de versão/modelo. Se quiser, tente novamente mais tarde.',
+      message: 'Não foi possível localizar um preço FIPE para esta combinação. Isso pode ocorrer quando há divergência de versão/modelo. Tente novamente mais tarde.',
     };
   }
 
@@ -314,34 +379,60 @@ function parseFipeData(fipeRaw: any, vehicleModelo: string) {
     }
   }
 
-  const prices = informacoesFipe
-    .map((v: any) => parseFloat((v.preco || '0').replace(/[^\d,]/g, '').replace(',', '.')))
-    .filter((p: number) => p > 0);
+  // Parse prices correctly using the robust parser
+  const validVersions: Array<{ version: any; price: number }> = [];
   
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  for (const v of informacoesFipe) {
+    const price = parsePriceToNumber(v.preco);
+    if (price !== null && price > 0) {
+      validVersions.push({ version: v, price });
+    }
+  }
+
+  const prices = validVersions.map(v => v.price);
+  const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : null;
+
+  // Parse the most likely version price
+  const mainPrice = parsePriceToNumber(mostLikelyVersion.preco);
+
+  // Build explanation text
+  const multipleVersions = informacoesFipe.length > 1;
+  let explicacao = 'A Tabela FIPE é uma referência média de mercado e não representa um preço final de compra/venda. ';
+  explicacao += 'O valor pode variar conforme versão/itens, estado de conservação, quilometragem, região e histórico do veículo. ';
+  explicacao += 'Use como base para negociação, seguro e avaliação — e compare com anúncios na sua cidade.';
+  
+  if (multipleVersions) {
+    explicacao += ' Encontramos mais de uma versão compatível; por isso mostramos a faixa e destacamos a mais provável.';
+  }
 
   return {
     found: true,
-    mesReferencia: mostLikelyVersion.mes_referencia,
+    mesReferencia: formatMesReferencia(mostLikelyVersion.mes_referencia),
     versaoMaisProvavel: {
       modelo: mostLikelyVersion.modelo_versao,
-      preco: mostLikelyVersion.preco,
+      preco: mainPrice,
+      precoFormatted: formatBRL(mainPrice),
       codigoFipe: mostLikelyVersion.codigo_fipe,
     },
-    faixaPreco: prices.length > 1 ? {
+    faixaPreco: (minPrice !== null && maxPrice !== null && prices.length > 1) ? {
       min: minPrice,
       max: maxPrice,
       minFormatted: formatBRL(minPrice),
       maxFormatted: formatBRL(maxPrice),
     } : null,
-    todasVersoes: informacoesFipe.map((v: any) => ({
-      modelo: v.modelo_versao,
-      preco: v.preco,
-      codigoFipe: v.codigo_fipe,
-      combustivel: v.combustivel,
-    })),
-    explicacao: 'A Tabela FIPE é uma referência de mercado. O valor pode variar conforme versão, estado de conservação, quilometragem e região. Use este preço como base para negociação, seguro e avaliação.',
+    todasVersoes: informacoesFipe.map((v: any) => {
+      const price = parsePriceToNumber(v.preco);
+      return {
+        modelo: v.modelo_versao,
+        preco: price,
+        precoFormatted: formatBRL(price),
+        codigoFipe: v.codigo_fipe,
+        combustivel: v.combustivel,
+      };
+    }),
+    explicacao,
+    multipleVersions,
   };
 }
 
@@ -364,21 +455,18 @@ function parseRenainfData(renainfRaw: any) {
   return {
     found: true,
     possuiInfracoes,
-    infracoes: infracoesList.map((inf: any) => ({
-      descricao: inf.descricao,
-      numeroAuto: inf.numero_auto,
-      valor: inf.valor,
-      orgaoAutuador: inf.orgao_autuador,
-      dataHora: inf.data_hora,
-      localMunicipio: inf.local_municipio,
-    })),
+    infracoes: infracoesList.map((inf: any) => {
+      const valorNumerico = parsePriceToNumber(inf.valor_aplicado || inf.valor);
+      return {
+        descricao: inf.descricao,
+        numeroAuto: inf.numero_auto,
+        valor: valorNumerico,
+        valorFormatted: formatBRL(valorNumerico),
+        orgaoAutuador: inf.orgao_autuador,
+        dataHora: inf.data_hora,
+        localMunicipio: inf.local_municipio,
+      };
+    }),
     aviso: 'IMPORTANTE: as infrações listadas podem ou não já terem sido pagas. Para confirmação, verifique junto ao órgão autuador.',
   };
-}
-
-function formatBRL(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
 }
