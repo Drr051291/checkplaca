@@ -17,6 +17,9 @@ import BlogPost from "./pages/BlogPost";
 import Sitemap from "./pages/Sitemap";
 import FaviconGenerator from "./pages/FaviconGenerator";
 import NotFound from "./pages/NotFound";
+import PreviewResult from "./pages/PreviewResult";
+import CheckoutNew from "./pages/CheckoutNew";
+import PaidReport from "./pages/PaidReport";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +33,10 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/search-results" element={<SearchResults />} />
+          <Route path="/preview" element={<PreviewResult />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout-new" element={<CheckoutNew />} />
+          <Route path="/paid-report" element={<PaidReport />} />
           <Route path="/report" element={<Report />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin/login" element={<AdminLogin />} />

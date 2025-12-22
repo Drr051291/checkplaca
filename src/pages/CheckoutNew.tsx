@@ -45,7 +45,7 @@ const CheckoutNew = () => {
     } else {
       // Track begin_checkout
       const product = createProductData('completo', placa);
-      trackBeginCheckout([product], 17.90);
+      trackBeginCheckout(product);
     }
   }, [plateQueryId, placa, navigate, toast]);
 
