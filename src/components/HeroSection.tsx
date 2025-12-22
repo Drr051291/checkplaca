@@ -37,8 +37,9 @@ export const HeroSection = () => {
     trackSearch(plate.toUpperCase());
     
     try {
-      const { data, error } = await supabase.functions.invoke('vehicle-report', {
-        body: { plate: cleanedPlate },
+      // Use new search-plate-preview edge function
+      const { data, error } = await supabase.functions.invoke('search-plate-preview', {
+        body: { placa: cleanedPlate },
       });
 
       if (error) {
@@ -48,10 +49,11 @@ export const HeroSection = () => {
 
       if (data.success) {
         toast({
-          title: "Consulta realizada!",
-          description: "Veja os resultados da sua busca...",
+          title: "Veículo encontrado!",
+          description: "Confira os dados básicos do veículo.",
         });
-        navigate(`/search-results?plate=${cleanedPlate}&reportId=${data.reportId}`);
+        // Navigate to preview page with plateQueryId
+        navigate(`/preview?plateQueryId=${data.plateQueryId}&placa=${cleanedPlate}`);
       } else {
         throw new Error(data.error || 'Erro ao processar consulta');
       }
