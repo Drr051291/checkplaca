@@ -16,19 +16,19 @@ const Sitemap = () => {
 
         if (error) throw error;
 
-        const baseUrl = window.location.origin;
-        const currentDate = new Date().toISOString();
+        const baseUrl = "https://checkplaca.lovable.app";
+        const currentDate = new Date().toISOString().split('T')[0];
 
-        // Build sitemap XML
+        // Build sitemap XML with proper formatting
         const urlEntries = [
-          // Homepage
+          // Homepage - highest priority
           `  <url>
     <loc>${baseUrl}/</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>`,
-          // Blog index
+          // Blog index - high priority
           `  <url>
     <loc>${baseUrl}/blog</loc>
     <lastmod>${currentDate}</lastmod>
@@ -37,7 +37,7 @@ const Sitemap = () => {
   </url>`,
           // Individual blog posts
           ...(posts || []).map((post) => {
-            const lastmod = post.updated_at || post.published_at || currentDate;
+            const lastmod = (post.updated_at || post.published_at || currentDate).split('T')[0];
             return `  <url>
     <loc>${baseUrl}/blog/${post.slug}</loc>
     <lastmod>${lastmod}</lastmod>
@@ -49,17 +49,34 @@ const Sitemap = () => {
 
         const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml"
-        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 ${urlEntries.join("\n")}
 </urlset>`;
 
         setXml(sitemapXml);
       } catch (error) {
         console.error("Error generating sitemap:", error);
+        // Generate minimal sitemap on error
+        const baseUrl = "https://checkplaca.lovable.app";
+        const currentDate = new Date().toISOString().split('T')[0];
+        const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/blog</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+</urlset>`;
+        setXml(fallbackXml);
       }
     };
 
@@ -68,9 +85,21 @@ ${urlEntries.join("\n")}
 
   useEffect(() => {
     if (xml) {
-      // Replace page content with XML
-      const htmlElement = document.documentElement;
-      htmlElement.innerHTML = `<pre style="word-wrap: break-word; white-space: pre-wrap;">${xml.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`;
+      // Set proper content type and replace page content
+      document.documentElement.innerHTML = '';
+      
+      // Create a pre element to display the XML
+      const pre = document.createElement('pre');
+      pre.style.cssText = 'word-wrap: break-word; white-space: pre-wrap; margin: 0; padding: 20px; font-family: monospace; font-size: 14px;';
+      pre.textContent = xml;
+      
+      document.body.appendChild(pre);
+      
+      // Set content type hint for crawlers
+      const meta = document.createElement('meta');
+      meta.httpEquiv = 'Content-Type';
+      meta.content = 'application/xml; charset=utf-8';
+      document.head.appendChild(meta);
     }
   }, [xml]);
 

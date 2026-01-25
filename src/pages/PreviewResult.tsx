@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TrustBar, StickyCTA, PricingCard } from "@/components/report";
 import { trackCTAClick } from "@/lib/analytics";
+import { SEO } from "@/components/SEO";
 
 const PreviewResult = () => {
   const [searchParams] = useSearchParams();
@@ -64,8 +65,17 @@ const PreviewResult = () => {
     "Dados atualizados de fontes públicas",
   ];
 
+  // Format plate for display
+  const displayPlaca = placa.toUpperCase();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background">
+      <SEO 
+        title={`Consulta ${displayPlaca} | Checkplaca`}
+        description={`Resultado da consulta da placa ${displayPlaca}. Veja dados básicos e desbloqueie o relatório completo com FIPE, histórico e gravames.`}
+        noIndex={true}
+      />
+
       {/* Header */}
       <header className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50 shadow-soft">
         <div className="container mx-auto px-4 py-3">
@@ -76,54 +86,54 @@ const PreviewResult = () => {
               onClick={() => navigate('/')}
               className="text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft className="w-4 h-4 mr-1" />
+              <ArrowLeft className="w-4 h-4 mr-1" aria-hidden="true" />
               <span className="hidden sm:inline">Nova consulta</span>
             </Button>
-            <h1 className="text-lg font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent]">
+            <span className="text-lg font-bold bg-gradient-hero [-webkit-background-clip:text] [background-clip:text] [-webkit-text-fill-color:transparent]">
               Checkplaca
-            </h1>
+            </span>
             <div className="w-20 sm:w-24"></div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 pb-24 sm:pb-8">
+      <main className="container mx-auto px-4 py-6 pb-24 sm:pb-8">
         <div className="max-w-2xl mx-auto space-y-6">
           
           {/* Report-style Header */}
-          <div className="text-center space-y-2">
+          <header className="text-center space-y-2">
             <Badge variant="outline" className="text-sm font-mono tracking-wider px-4 py-1.5">
-              {placa}
+              {displayPlaca}
             </Badge>
-            <h2 className="text-2xl font-bold text-foreground">Resumo gratuito</h2>
+            <h1 className="text-2xl font-bold text-foreground">Resumo gratuito</h1>
             <p className="text-sm text-muted-foreground">
               Consultado em {currentDate} às {currentTime}
             </p>
-          </div>
+          </header>
 
           {/* Preview Card */}
           <Card className="shadow-strong border-0 overflow-hidden">
             <CardContent className="p-0">
-              <div className="grid grid-cols-2 divide-x divide-y divide-border">
+              <dl className="grid grid-cols-2 divide-x divide-y divide-border">
                 {previewFields.map((field, i) => (
                   <div 
                     key={i} 
                     className="p-4 sm:p-5 flex items-start gap-3"
                   >
                     <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                      <field.icon className="w-4 h-4 text-primary" />
+                      <field.icon className="w-4 h-4 text-primary" aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs text-muted-foreground font-medium mb-0.5">
+                      <dt className="text-xs text-muted-foreground font-medium mb-0.5">
                         {field.label}
-                      </div>
-                      <div className="font-semibold text-foreground truncate">
+                      </dt>
+                      <dd className="font-semibold text-foreground truncate">
                         {field.value}
-                      </div>
+                      </dd>
                     </div>
                   </div>
                 ))}
-              </div>
+              </dl>
             </CardContent>
           </Card>
 
@@ -132,20 +142,20 @@ const PreviewResult = () => {
             <div className="bg-gradient-hero text-white p-5 sm:p-6">
               <div className="flex items-start gap-3 mb-4">
                 <div className="p-2.5 rounded-lg bg-white/20 shrink-0">
-                  <Sparkles className="w-5 h-5" />
+                  <Sparkles className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg mb-1">Desbloqueie o relatório completo</h3>
+                  <h2 className="font-bold text-lg mb-1">Desbloqueie o relatório completo</h2>
                   <p className="text-sm opacity-90">
                     Inclui histórico, dados técnicos, FIPE e infrações (quando disponíveis).
                   </p>
                 </div>
               </div>
 
-              <ul className="space-y-2 mb-5">
+              <ul className="space-y-2 mb-5" role="list">
                 {pricingBenefits.map((benefit, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 shrink-0" />
+                    <CheckCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
                     <span>{benefit}</span>
                   </li>
                 ))}
@@ -168,15 +178,15 @@ const PreviewResult = () => {
             <CardContent className="p-4 bg-primary/5">
               <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-primary" />
+                  <Lock className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
                   <span>Pagamento seguro</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-primary" />
+                  <Clock className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
                   <span>Acesso imediato</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-primary" />
+                  <FileText className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
                   <span>PDF incluso</span>
                 </div>
               </div>
@@ -188,15 +198,15 @@ const PreviewResult = () => {
             <AccordionItem value="included" className="border rounded-lg shadow-soft bg-background">
               <AccordionTrigger className="px-4 py-3 hover:no-underline">
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <FileText className="w-4 h-4 text-primary" />
+                  <FileText className="w-4 h-4 text-primary" aria-hidden="true" />
                   Ver o que está incluso no relatório
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
-                <ul className="space-y-2.5">
+                <ul className="space-y-2.5" role="list">
                   {includedItems.map((item, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
-                      <CheckCircle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                      <CheckCircle className="w-4 h-4 text-accent shrink-0 mt-0.5" aria-hidden="true" />
                       <span className="text-muted-foreground">{item}</span>
                     </li>
                   ))}
@@ -222,7 +232,7 @@ const PreviewResult = () => {
               onClick={handleGetFullReport}
               className="gradient-primary shadow-strong h-12 px-8 font-semibold"
             >
-              <Sparkles className="w-4 h-4 mr-2" />
+              <Sparkles className="w-4 h-4 mr-2" aria-hidden="true" />
               Ver Relatório Completo — R$ 17,90
             </Button>
             <p className="text-xs text-muted-foreground mt-3">
@@ -230,7 +240,7 @@ const PreviewResult = () => {
             </p>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Sticky CTA - Mobile Only */}
       <StickyCTA
