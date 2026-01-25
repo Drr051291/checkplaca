@@ -77,31 +77,38 @@ export const LatestBlogPosts = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-          {posts.map((post) => (
+          {posts.map((post, index) => (
             <Card 
               key={post.id}
-              className="group hover:shadow-elegant transition-smooth cursor-pointer overflow-hidden border-border/50 bg-card"
+              className={`
+                group cursor-pointer overflow-hidden border-border/50 bg-card
+                transition-all duration-300 ease-out
+                hover:shadow-xl hover:-translate-y-2 hover:border-primary/20
+                animate-fade-in
+              `}
+              style={{ animationDelay: `${index * 100}ms` }}
               onClick={() => navigate(`/blog/${post.slug}`)}
             >
               {post.featured_image && (
-                <div className="aspect-video overflow-hidden bg-muted">
+                <div className="aspect-video overflow-hidden bg-muted relative">
                   <img
                     src={post.featured_image}
                     alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
+                    className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
                     loading="lazy"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
               )}
               <CardHeader className="pb-3">
                 {post.category && (
                   <div className="mb-2">
-                    <span className="inline-block px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full">
+                    <span className="inline-block px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full transition-all duration-200 group-hover:bg-primary/20 group-hover:shadow-sm">
                       {post.category.name}
                     </span>
                   </div>
                 )}
-                <CardTitle className="text-lg sm:text-xl leading-tight group-hover:text-primary transition-smooth line-clamp-2">
+                <CardTitle className="text-lg sm:text-xl leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-2">
                   {post.title}
                 </CardTitle>
               </CardHeader>
@@ -116,7 +123,10 @@ export const LatestBlogPosts = () => {
                     <Calendar className="w-3.5 h-3.5" />
                     <span>{formatDate(post.published_at)}</span>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-primary group-hover:translate-x-1 transition-smooth" />
+                  <div className="flex items-center gap-1 text-primary text-sm font-medium">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">Ler mais</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -128,10 +138,10 @@ export const LatestBlogPosts = () => {
             variant="outline"
             size="lg"
             onClick={() => navigate("/blog")}
-            className="group"
+            className="group hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
           >
             Ver todos os artigos
-            <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-smooth" />
+            <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
           </Button>
         </div>
       </div>
