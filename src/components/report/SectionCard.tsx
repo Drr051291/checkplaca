@@ -26,16 +26,23 @@ export const SectionCard = ({
   children
 }: SectionCardProps) => {
   return (
-    <Card className={cn("shadow-soft print:shadow-none print:border print:border-border break-inside-avoid", className)}>
+    <Card className={cn(
+      "shadow-soft print:shadow-none print:border print:border-border break-inside-avoid",
+      "hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ease-out",
+      "group",
+      className
+    )}>
       <CardHeader className={cn("pb-4", headerClassName)}>
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            {Icon && <Icon className="w-5 h-5 text-primary" />}
+            {Icon && (
+              <Icon className="w-5 h-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+            )}
             {title}
           </CardTitle>
           <div className="flex items-center gap-2">
             {badge && (
-              <Badge variant={badgeVariant} className="text-xs font-normal">
+              <Badge variant={badgeVariant} className="text-xs font-normal transition-all duration-200 group-hover:shadow-sm">
                 {badge}
               </Badge>
             )}
