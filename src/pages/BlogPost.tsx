@@ -5,8 +5,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, Eye, ArrowLeft, Tag } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Calendar, Clock, Eye, ArrowLeft, Tag, Home } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import {
+  AuthorBox,
+  TableOfContents,
+  BlogCTABanner,
+  SocialShare,
+  RelatedPosts,
+  BlogSidebar,
+} from "@/components/blog";
 
 interface Post {
   id: string;
@@ -82,7 +90,7 @@ const BlogPost = () => {
           .eq("category_id", postData.category_id)
           .eq("status", "published")
           .neq("id", postData.id)
-          .limit(3);
+          .limit(4);
         
         if (related) setRelatedPosts(related);
       }
@@ -122,36 +130,46 @@ const BlogPost = () => {
     );
   }
 
+  const articleUrl = `https://checkplaca.lovable.app/blog/${post.slug}`;
+  
+  // Breadcrumb items
+  const breadcrumbItems = [
+    { label: "Blog", href: "/blog" },
+    ...(post.category ? [{ label: post.category.name, href: `/blog?categoria=${post.category.slug}` }] : []),
+    { label: post.title }
+  ];
+
   // Schema.org structured data for article
   const schemaOrgArticle = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": post.title,
     "description": post.excerpt,
-    "image": post.featured_image || "https://checkplaca.com.br/og-image.png",
+    "image": post.featured_image || "https://checkplaca.lovable.app/og-image.png",
     "datePublished": post.published_at,
     "dateModified": post.published_at,
     "author": {
       "@type": "Organization",
-      "name": "CheckPlaca",
-      "url": "https://checkplaca.com.br"
+      "name": "Checkplaca",
+      "url": "https://checkplaca.lovable.app"
     },
     "publisher": {
       "@type": "Organization",
-      "name": "CheckPlaca",
+      "name": "Checkplaca",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://checkplaca.com.br/logo.png"
+        "url": "https://checkplaca.lovable.app/favicon.ico"
       }
     },
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": post.canonical_url || `https://checkplaca.com.br/blog/${post.slug}`
+      "@id": articleUrl
     },
     "articleSection": post.category?.name,
     "keywords": post.tags.map(t => t.name).join(", "),
     "wordCount": post.content.split(/\s+/).length,
-    "inLanguage": "pt-BR"
+    "inLanguage": "pt-BR",
+    "isAccessibleForFree": true
   };
 
   const articleKeywords = [
@@ -164,17 +182,17 @@ const BlogPost = () => {
   return (
     <>
       <Helmet>
-        <title>{post.meta_title || `${post.title} - Blog CheckPlaca`}</title>
+        <title>{post.meta_title || `${post.title} - Blog Checkplaca`}</title>
         <meta name="description" content={post.meta_description || post.excerpt} />
         <meta name="keywords" content={articleKeywords} />
-        <link rel="canonical" href={post.canonical_url || `https://checkplaca.com.br/blog/${post.slug}`} />
+        <link rel="canonical" href={post.canonical_url || articleUrl} />
         
         {/* Open Graph */}
         <meta property="og:title" content={post.meta_title || post.title} />
         <meta property="og:description" content={post.meta_description || post.excerpt} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://checkplaca.com.br/blog/${post.slug}`} />
-        <meta property="og:site_name" content="CheckPlaca" />
+        <meta property="og:url" content={articleUrl} />
+        <meta property="og:site_name" content="Checkplaca" />
         <meta property="og:locale" content="pt_BR" />
         {post.featured_image && <meta property="og:image" content={post.featured_image} />}
         {post.featured_image && <meta property="og:image:alt" content={post.title} />}
@@ -185,8 +203,6 @@ const BlogPost = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={post.meta_title || post.title} />
         <meta name="twitter:description" content={post.meta_description || post.excerpt} />
-        <meta name="twitter:site" content="@checkplaca" />
-        <meta name="twitter:creator" content="@checkplaca" />
         {post.featured_image && <meta name="twitter:image" content={post.featured_image} />}
         {post.featured_image && <meta name="twitter:image:alt" content={post.title} />}
         
@@ -194,7 +210,7 @@ const BlogPost = () => {
         <meta property="article:published_time" content={post.published_at} />
         <meta property="article:modified_time" content={post.published_at} />
         {post.category && <meta property="article:section" content={post.category.name} />}
-        <meta property="article:author" content="CheckPlaca" />
+        <meta property="article:author" content="Checkplaca" />
         {post.tags.map((tag) => (
           <meta key={tag.slug} property="article:tag" content={tag.name} />
         ))}
@@ -211,141 +227,190 @@ const BlogPost = () => {
           <div className="container flex h-16 items-center justify-between">
             <Link to="/" className="flex items-center space-x-2">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                CheckPlaca
+                Checkplaca
               </h1>
             </Link>
-            <nav className="flex items-center gap-4">
-              <Button variant="ghost" onClick={() => navigate("/blog")}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Blog
+            <nav className="flex items-center gap-2 sm:gap-4">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/blog")}>
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Blog</span>
               </Button>
-              <Button onClick={() => navigate("/")}>
-                Consultar Placa
+              <Button size="sm" onClick={() => navigate("/")}>
+                <Home className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Consultar Placa</span>
               </Button>
             </nav>
           </div>
         </header>
 
-        {/* Article */}
-        <article className="py-8 px-4">
-          <div className="container max-w-4xl">
-            {/* Featured Image */}
-            {post.featured_image && (
-              <div className="mb-8 rounded-lg overflow-hidden">
-                <img
-                  src={post.featured_image}
-                  alt={post.title}
-                  className="w-full h-auto max-h-[500px] object-cover"
-                />
-              </div>
-            )}
-
-            {/* Meta Info */}
-            <div className="mb-6">
-              {post.category && (
-                <Badge variant="secondary" className="mb-4">
+        {/* Hero Image */}
+        {post.featured_image && (
+          <div className="relative w-full h-[200px] sm:h-[300px] lg:h-[400px] overflow-hidden">
+            <img
+              src={post.featured_image}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+            
+            {/* Category Badge on Image */}
+            {post.category && (
+              <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
+                <Badge className="bg-primary text-primary-foreground shadow-lg">
                   {post.category.name}
                 </Badge>
-              )}
-              
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
-                {post.title}
-              </h1>
-              
-              <p className="text-xl text-muted-foreground mb-6">
-                {post.excerpt}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatDate(post.published_at)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{estimateReadingTime(post.content)} min de leitura</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  <span>{post.views} visualizações</span>
-                </div>
-              </div>
-
-              {post.tags.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 mt-4">
-                  <Tag className="h-4 w-4 text-muted-foreground" />
-                  {post.tags.map((tag) => (
-                    <Badge key={tag.slug} variant="outline">
-                      {tag.name}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <Separator className="mb-8" />
-
-            {/* Content */}
-            <div 
-              className="prose prose-lg dark:prose-invert max-w-none mb-12"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
-
-            <Separator className="mb-8" />
-
-            {/* CTA */}
-            <Card className="p-8 text-center bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-              <h3 className="text-2xl font-bold mb-4">
-                Consulte seu Veículo Agora
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Descubra tudo sobre qualquer veículo em segundos
-              </p>
-              <Button size="lg" onClick={() => navigate("/")}>
-                Fazer Consulta Grátis
-              </Button>
-            </Card>
-
-            {/* Related Posts */}
-            {relatedPosts.length > 0 && (
-              <div className="mt-12">
-                <h2 className="text-2xl font-bold mb-6">Artigos Relacionados</h2>
-                <div className="grid md:grid-cols-3 gap-6">
-                  {relatedPosts.map((related) => (
-                    <Card
-                      key={related.id}
-                      className="cursor-pointer hover:shadow-lg transition-all"
-                      onClick={() => navigate(`/blog/${related.slug}`)}
-                    >
-                      {related.featured_image && (
-                        <div className="h-32 overflow-hidden">
-                          <img
-                            src={related.featured_image}
-                            alt={related.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <h3 className="font-semibold mb-2 line-clamp-2">
-                          {related.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {related.excerpt}
-                        </p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
               </div>
             )}
           </div>
-        </article>
+        )}
+
+        {/* Main Content */}
+        <main className="container py-6 sm:py-8">
+          {/* Breadcrumbs */}
+          <Breadcrumbs items={breadcrumbItems} className="mb-6" />
+
+          {/* Two Column Layout */}
+          <div className="grid lg:grid-cols-[1fr_320px] gap-8 lg:gap-12">
+            {/* Main Column */}
+            <article className="min-w-0">
+              {/* Title & Meta */}
+              <header className="mb-8">
+                {!post.featured_image && post.category && (
+                  <Badge variant="secondary" className="mb-4">
+                    {post.category.name}
+                  </Badge>
+                )}
+                
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+                  {post.title}
+                </h1>
+                
+                <p className="text-lg sm:text-xl text-muted-foreground mb-6">
+                  {post.excerpt}
+                </p>
+
+                {/* Meta Info Row */}
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground mb-4">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formatDate(post.published_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{estimateReadingTime(post.content)} min de leitura</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Eye className="h-4 w-4" />
+                    <span>{post.views} visualizações</span>
+                  </div>
+                </div>
+
+                {/* Tags */}
+                {post.tags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    {post.tags.map((tag) => (
+                      <Badge key={tag.slug} variant="outline" className="text-xs">
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Social Share */}
+                <SocialShare 
+                  url={articleUrl}
+                  title={post.title}
+                  description={post.excerpt}
+                  className="mt-4"
+                />
+              </header>
+
+              <Separator className="mb-8" />
+
+              {/* Table of Contents (Mobile) */}
+              <div className="lg:hidden mb-8">
+                <TableOfContents content={post.content} />
+              </div>
+
+              {/* Article Content */}
+              <div 
+                className="prose prose-lg dark:prose-invert max-w-none mb-8
+                  prose-headings:scroll-mt-24
+                  prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-10 prose-h2:mb-4
+                  prose-h3:text-xl prose-h3:font-semibold prose-h3:mt-8 prose-h3:mb-3
+                  prose-p:text-muted-foreground prose-p:leading-relaxed
+                  prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                  prose-img:rounded-lg prose-img:shadow-md
+                  prose-ul:my-4 prose-li:text-muted-foreground
+                  prose-blockquote:border-l-primary prose-blockquote:bg-muted/30 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg
+                "
+                dangerouslySetInnerHTML={{ __html: post.content }}
+              />
+
+              {/* Inline CTA Banner */}
+              <BlogCTABanner variant="inline" />
+
+              <Separator className="my-8" />
+
+              {/* Author Box */}
+              <AuthorBox className="mb-8" />
+
+              {/* Final CTA */}
+              <BlogCTABanner variant="footer" className="mb-8" />
+
+              {/* Social Share (Bottom) */}
+              <div className="flex items-center justify-center py-6 border-t border-b">
+                <SocialShare 
+                  url={articleUrl}
+                  title={post.title}
+                  description={post.excerpt}
+                />
+              </div>
+
+              {/* Related Posts (Mobile) */}
+              <div className="lg:hidden mt-8">
+                <RelatedPosts posts={relatedPosts} variant="grid" />
+              </div>
+            </article>
+
+            {/* Sidebar (Desktop) */}
+            <div className="hidden lg:block">
+              <div className="sticky top-24 space-y-6">
+                {/* Table of Contents */}
+                <TableOfContents content={post.content} />
+                
+                {/* Sidebar CTA & Related */}
+                <BlogSidebar relatedPosts={relatedPosts} />
+              </div>
+            </div>
+          </div>
+
+          {/* Related Posts Grid (Desktop - Full Width) */}
+          <div className="hidden lg:block mt-16">
+            <RelatedPosts posts={relatedPosts} variant="grid" />
+          </div>
+        </main>
 
         {/* Footer */}
         <footer className="border-t bg-muted/50 py-8 mt-12">
-          <div className="container text-center text-sm text-muted-foreground">
-            <p>© 2025 CheckPlaca. Todos os direitos reservados.</p>
+          <div className="container">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <Link to="/" className="text-lg font-bold text-primary">
+                Checkplaca
+              </Link>
+              <p className="text-sm text-muted-foreground text-center">
+                © 2025 Checkplaca. Todos os direitos reservados.
+              </p>
+              <nav className="flex items-center gap-4 text-sm">
+                <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">
+                  Consultar Placa
+                </Link>
+                <Link to="/blog" className="text-muted-foreground hover:text-primary transition-colors">
+                  Blog
+                </Link>
+              </nav>
+            </div>
           </div>
         </footer>
       </div>
