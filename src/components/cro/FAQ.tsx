@@ -6,6 +6,8 @@ import {
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HelpCircle } from "lucide-react";
+import { Helmet } from "react-helmet-async";
+import { createFAQSchema } from "@/components/SEO";
 
 const faqs = [
   {
@@ -39,32 +41,50 @@ const faqs = [
   {
     question: "Posso ver uma amostra do relatório antes de comprar?",
     answer: "Sim! A consulta gratuita que você acabou de ver mostra os dados básicos. O relatório completo adiciona informações detalhadas sobre FIPE, roubo/furto, leilão, gravames e recalls que não estão disponíveis na versão gratuita."
+  },
+  {
+    question: "Como consultar placa de veículo pelo Checkplaca?",
+    answer: "É simples: digite a placa do veículo no campo de busca na página inicial, clique em consultar e veja o resumo gratuito. Para informações completas como tabela FIPE, histórico e gravames, desbloqueie o relatório completo por apenas R$ 17,90."
+  },
+  {
+    question: "Quais informações posso obter consultando uma placa?",
+    answer: "Você pode obter: dados cadastrais do veículo (marca, modelo, ano, cor), tabela FIPE atualizada, histórico de roubo e furto, registros de leilão, gravames e restrições financeiras, recalls do fabricante e informações técnicas completas."
   }
 ];
 
 export const FAQ = () => {
+  const faqSchema = createFAQSchema(faqs);
+
   return (
-    <Card className="shadow-strong">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-center justify-center">
-          <HelpCircle className="w-6 h-6 text-primary" />
-          Perguntas Frequentes
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Accordion type="single" collapsible className="w-full">
-          {faqs.map((faq, index) => (
-            <AccordionItem key={index} value={`item-${index}`}>
-              <AccordionTrigger className="text-left">
-                {faq.question}
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                {faq.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </CardContent>
-    </Card>
+    <>
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(faqSchema)}
+        </script>
+      </Helmet>
+      
+      <Card className="shadow-strong">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-center justify-center" id="faq-titulo">
+            <HelpCircle className="w-6 h-6 text-primary" aria-hidden="true" />
+            <span>Perguntas Frequentes</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            {faqs.map((faq, index) => (
+              <AccordionItem key={index} value={`item-${index}`}>
+                <AccordionTrigger className="text-left">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+    </>
   );
 };
