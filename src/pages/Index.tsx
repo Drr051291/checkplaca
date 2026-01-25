@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/HeroSection";
 import { ReportExampleSection } from "@/components/ReportExampleSection";
 import { IncludedSection } from "@/components/IncludedSection";
 import { LatestBlogPosts } from "@/components/LatestBlogPosts";
+import { FAQ } from "@/components/cro/FAQ";
 import { useTrackingParams } from "@/hooks/useTrackingParams";
 
 const Index = () => {
@@ -60,6 +61,13 @@ const Index = () => {
 
       {/* Latest Blog Posts */}
       <LatestBlogPosts />
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-12 sm:py-16 lg:py-20 bg-muted/30">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <FAQ />
+        </div>
+      </section>
 
       {/* CTA Section */}
       <section className="py-12 sm:py-16 md:py-20 bg-gradient-hero text-primary-foreground">
