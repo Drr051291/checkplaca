@@ -37,20 +37,25 @@ export const StickyCTA = ({
 
   return (
     <div className={cn(
-      "fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border shadow-lg p-3 sm:hidden",
+      "fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border shadow-xl p-3 sm:hidden",
       "animate-slide-up",
       className
     )}>
       <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
         <div className="min-w-0 flex-1">
           <div className="text-xs text-muted-foreground">{label}</div>
-          <div className="font-bold text-primary">{price}</div>
+          <div className="font-bold text-primary animate-pulse-slow">{price}</div>
         </div>
         <Button 
           onClick={onClick}
-          className="gradient-primary font-semibold shadow-strong shrink-0"
+          className={cn(
+            "gradient-primary font-semibold shadow-strong shrink-0",
+            "transition-all duration-200",
+            "hover:shadow-xl hover:scale-105",
+            "active:scale-95"
+          )}
         >
-          <Sparkles className="w-4 h-4 mr-1.5" />
+          <Sparkles className="w-4 h-4 mr-1.5 animate-pulse" />
           {buttonText}
         </Button>
       </div>

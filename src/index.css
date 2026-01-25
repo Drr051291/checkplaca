@@ -150,6 +150,73 @@
     @apply transition-transform duration-200 hover:scale-105;
   }
 
+  /* Premium micro-interaction utilities */
+  .hover-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px hsl(var(--primary) / 0.2);
+  }
+  
+  .hover-glow {
+    @apply transition-all duration-300 ease-out;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 0 24px hsl(var(--primary) / 0.3);
+  }
+  
+  .card-interactive {
+    @apply transition-all duration-300 ease-out cursor-pointer;
+  }
+  .card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -6px hsl(var(--primary) / 0.15);
+  }
+  .card-interactive:active {
+    transform: translateY(0) scale(0.99);
+  }
+  
+  .btn-press {
+    @apply transition-all duration-150 ease-out;
+  }
+  .btn-press:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -2px hsl(var(--primary) / 0.3);
+  }
+  .btn-press:active {
+    transform: translateY(1px) scale(0.98);
+    box-shadow: 0 2px 4px -1px hsl(var(--primary) / 0.2);
+  }
+  
+  .shimmer-effect {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+  
+  .icon-bounce {
+    @apply transition-transform duration-200 ease-out;
+  }
+  .icon-bounce:hover {
+    animation: bounce-soft 0.3s ease-out;
+  }
+  
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+
   /* Blog post content images */
   .prose img {
     @apply rounded-lg shadow-md my-6 mx-auto;

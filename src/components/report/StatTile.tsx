@@ -26,11 +26,18 @@ const iconStyles = {
 export const StatTile = ({ icon: Icon, label, value, status = "neutral", className }: StatTileProps) => {
   return (
     <div className={cn(
-      "flex items-center gap-3 p-3 rounded-lg border transition-smooth",
+      "flex items-center gap-3 p-3 rounded-lg border",
+      "transition-all duration-300 ease-out",
+      "hover:shadow-md hover:-translate-y-0.5",
+      "cursor-default group",
       statusStyles[status],
       className
     )}>
-      <div className={cn("p-2 rounded-lg bg-background/50", iconStyles[status])}>
+      <div className={cn(
+        "p-2 rounded-lg bg-background/50",
+        "transition-transform duration-300 group-hover:scale-110",
+        iconStyles[status]
+      )}>
         <Icon className="w-4 h-4" />
       </div>
       <div className="min-w-0 flex-1">
