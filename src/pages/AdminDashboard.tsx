@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3, Monitor, Smartphone, Clock, RefreshCw } from "lucide-react";
+import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,28 +11,15 @@ import { Session } from "@supabase/supabase-js";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { useQuery } from "@tanstack/react-query";
 
 interface DashboardStats {
-  totalSessions: number;
-  freeConsultations: number;
+  totalConsultations: number;
   paidConsultations: number;
   totalRevenue: number;
-  sessionToConsultationRate: number;
   consultationToSaleRate: number;
-}
-
-interface AnalyticsStats {
-  visitors: number;
-  pageviews: number;
-  avgDuration: string;
-  bounceRate: number;
-  topPages: { path: string; count: number }[];
-  sources: { source: string; count: number }[];
-  devices: { device: string; count: number }[];
-  timeSeriesData: { date: string; visitors: number; pageviews: number }[];
+  avgTicket: number;
 }
 
 interface Customer {
@@ -57,6 +44,7 @@ interface ChartData {
   date: string;
   consultas: number;
   vendas: number;
+  receita: number;
 }
 
 const AdminDashboard = () => {
@@ -64,30 +52,14 @@ const AdminDashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [analyticsStats, setAnalyticsStats] = useState<AnalyticsStats | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [period, setPeriod] = useState<string>("7");
   const [customDateStart, setCustomDateStart] = useState<string>("");
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Fetch Lovable Analytics
-  const { data: analyticsData } = useQuery({
-    queryKey: ['lovable-analytics', period, customDateStart, customDateEnd],
-    queryFn: async () => {
-      const { startDate, endDate } = getDateRange();
-      const start = startDate.split('T')[0];
-      const end = endDate.split('T')[0];
-      
-      const response = await fetch(`/.netlify/functions/read-analytics?start=${start}&end=${end}&granularity=daily`);
-      if (!response.ok) throw new Error('Failed to fetch analytics');
-      return response.json();
-    },
-    enabled: isAdmin,
-  });
-
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -138,173 +110,6 @@ const AdminDashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    
-    const fetchDashboardData = async () => {
-      try {
-        const { startDate, endDate } = getDateRange();
-
-        // Fetch all vehicle reports (total consultations)
-        const { data: reports, error: reportsError } = await supabase
-          .from('vehicle_reports')
-          .select('id, created_at, user_id')
-          .gte('created_at', startDate)
-          .lte('created_at', endDate);
-
-        if (reportsError) throw reportsError;
-
-        // Fetch all payments (paid sales)
-        const { data: payments, error: paymentsError } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('status', 'paid')
-          .gte('created_at', startDate)
-          .lte('created_at', endDate);
-
-        if (paymentsError) throw paymentsError;
-
-        // Fetch customers
-        const { data: customersData, error: customersError } = await supabase
-          .from('customers')
-          .select('*')
-          .gte('created_at', startDate)
-          .lte('created_at', endDate)
-          .order('created_at', { ascending: false });
-
-        if (customersError) throw customersError;
-
-        // Calculate statistics
-        const totalConsultations = reports?.length || 0;
-        const paidConsultations = payments?.length || 0;
-        const freeConsultations = totalConsultations - paidConsultations;
-        const totalRevenue = payments?.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0')), 0) || 0;
-
-        // Unique sessions (unique user_ids for logged in users + anonymous reports)
-        const uniqueUserIds = new Set();
-        const anonymousReports = reports?.filter(r => !r.user_id) || [];
-        reports?.forEach(r => {
-          if (r.user_id) uniqueUserIds.add(r.user_id);
-        });
-        const totalSessions = uniqueUserIds.size + anonymousReports.length;
-
-        // Conversion rates
-        const sessionToConsultationRate = totalSessions > 0 
-          ? ((totalConsultations / totalSessions) * 100)
-          : 0;
-        
-        const consultationToSaleRate = totalConsultations > 0 
-          ? ((paidConsultations / totalConsultations) * 100)
-          : 0;
-
-        setStats({
-          totalSessions,
-          freeConsultations,
-          paidConsultations,
-          totalRevenue,
-          sessionToConsultationRate,
-          consultationToSaleRate
-        });
-
-        setCustomers(customersData || []);
-
-        // Prepare chart data
-        const dailyData = prepareDailyChartData(reports || [], payments || [], startDate, endDate);
-        setChartData(dailyData);
-
-        // Process Lovable Analytics data
-        if (analyticsData) {
-          const totalPageviews = analyticsData.pageviews?.reduce((sum: number, pv: any) => sum + (pv.count || 0), 0) || 0;
-          const totalVisitors = analyticsData.visitors || 0;
-          const totalDuration = analyticsData.durations?.reduce((sum: number, d: any) => sum + (d.duration || 0), 0) || 0;
-          const avgDuration = totalVisitors > 0 ? Math.floor(totalDuration / totalVisitors) : 0;
-          const minutes = Math.floor(avgDuration / 60);
-          const seconds = avgDuration % 60;
-          
-          // Calculate bounce rate (sessions with only 1 pageview / total sessions * 100)
-          const singlePageSessions = analyticsData.pageviews?.filter((pv: any) => pv.count === 1).length || 0;
-          const bounceRate = totalVisitors > 0 ? Math.round((singlePageSessions / totalVisitors) * 100) : 0;
-
-          // Top pages
-          const pagesMap = new Map<string, number>();
-          analyticsData.pageviews?.forEach((pv: any) => {
-            pagesMap.set(pv.path || '/', (pagesMap.get(pv.path || '/') || 0) + (pv.count || 0));
-          });
-          const topPages = Array.from(pagesMap.entries())
-            .map(([path, count]) => ({ path, count }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-
-          // Sources (referrers)
-          const sourcesMap = new Map<string, number>();
-          analyticsData.referrers?.forEach((ref: any) => {
-            const source = ref.referrer || 'Direto';
-            sourcesMap.set(source, (sourcesMap.get(source) || 0) + (ref.count || 0));
-          });
-          const sources = Array.from(sourcesMap.entries())
-            .map(([source, count]) => ({ source, count }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-
-          // Devices
-          const devicesMap = new Map<string, number>();
-          analyticsData.devices?.forEach((dev: any) => {
-            devicesMap.set(dev.device || 'Desconhecido', (devicesMap.get(dev.device || 'Desconhecido') || 0) + (dev.count || 0));
-          });
-          const devices = Array.from(devicesMap.entries())
-            .map(([device, count]) => ({ device, count }))
-            .sort((a, b) => b.count - a.count);
-
-          // Time series data
-          const timeSeriesMap = new Map<string, { visitors: Set<string>, pageviews: number }>();
-          analyticsData.pageviews?.forEach((pv: any) => {
-            const dateKey = pv.timestamp?.split('T')[0] || new Date().toISOString().split('T')[0];
-            if (!timeSeriesMap.has(dateKey)) {
-              timeSeriesMap.set(dateKey, { visitors: new Set(), pageviews: 0 });
-            }
-            const existing = timeSeriesMap.get(dateKey)!;
-            existing.pageviews += pv.count || 0;
-            if (pv.visitor_id) existing.visitors.add(pv.visitor_id);
-          });
-
-          const timeSeriesData = Array.from(timeSeriesMap.entries())
-            .map(([date, data]) => ({
-              date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-              visitors: data.visitors.size,
-              pageviews: data.pageviews
-            }))
-            .sort((a, b) => {
-              const [dayA, monthA] = a.date.split('/');
-              const [dayB, monthB] = b.date.split('/');
-              return new Date(`2024-${monthA}-${dayA}`).getTime() - new Date(`2024-${monthB}-${dayB}`).getTime();
-            })
-            .slice(-30);
-
-          setAnalyticsStats({
-            visitors: totalVisitors,
-            pageviews: totalPageviews,
-            avgDuration: `${minutes}m ${seconds}s`,
-            bounceRate,
-            topPages,
-            sources,
-            devices,
-            timeSeriesData,
-          });
-        }
-
-      } catch (error) {
-        console.error('[AdminDashboard] Erro ao buscar dados:', error);
-        toast({
-          title: "Erro ao carregar dados",
-          description: "Não foi possível carregar os dados do dashboard.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchDashboardData();
-  }, [isAdmin, period, customDateStart, customDateEnd, toast, analyticsData]);
 
   const getDateRange = () => {
     const endDate = new Date().toISOString();
@@ -359,7 +164,7 @@ const AdminDashboard = () => {
   };
 
   const prepareDailyChartData = (reports: any[], payments: any[], startDate: string, endDate: string) => {
-    const dailyMap = new Map<string, { consultas: number; vendas: number }>();
+    const dailyMap = new Map<string, { consultas: number; vendas: number; receita: number }>();
     
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -367,7 +172,7 @@ const AdminDashboard = () => {
     // Initialize all dates in range
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateKey = d.toISOString().split('T')[0];
-      dailyMap.set(dateKey, { consultas: 0, vendas: 0 });
+      dailyMap.set(dateKey, { consultas: 0, vendas: 0, receita: 0 });
     }
 
     // Count consultations per day
@@ -379,12 +184,17 @@ const AdminDashboard = () => {
       }
     });
 
-    // Count sales per day
+    // Count sales and revenue per day
     payments.forEach(payment => {
       const dateKey = new Date(payment.created_at).toISOString().split('T')[0];
       if (dailyMap.has(dateKey)) {
         const existing = dailyMap.get(dateKey)!;
-        dailyMap.set(dateKey, { ...existing, vendas: existing.vendas + 1 });
+        const amount = parseFloat(payment.amount?.toString() || '0');
+        dailyMap.set(dateKey, { 
+          ...existing, 
+          vendas: existing.vendas + 1,
+          receita: existing.receita + amount
+        });
       }
     });
 
@@ -395,6 +205,86 @@ const AdminDashboard = () => {
       }))
       .slice(-30); // Show last 30 days max
   };
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsRefreshing(true);
+      const { startDate, endDate } = getDateRange();
+
+      // Fetch all vehicle reports (total consultations)
+      const { data: reports, error: reportsError } = await supabase
+        .from('vehicle_reports')
+        .select('id, created_at, user_id')
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
+
+      if (reportsError) throw reportsError;
+
+      // Fetch all payments (paid sales)
+      const { data: payments, error: paymentsError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('status', 'paid')
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
+
+      if (paymentsError) throw paymentsError;
+
+      // Fetch customers
+      const { data: customersData, error: customersError } = await supabase
+        .from('customers')
+        .select('*')
+        .gte('created_at', startDate)
+        .lte('created_at', endDate)
+        .order('created_at', { ascending: false });
+
+      if (customersError) throw customersError;
+
+      // Calculate statistics
+      const totalConsultations = reports?.length || 0;
+      const paidConsultations = payments?.length || 0;
+      const totalRevenue = payments?.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0')), 0) || 0;
+
+      // Conversion rate
+      const consultationToSaleRate = totalConsultations > 0 
+        ? ((paidConsultations / totalConsultations) * 100)
+        : 0;
+
+      // Average ticket
+      const avgTicket = paidConsultations > 0 
+        ? totalRevenue / paidConsultations
+        : 0;
+
+      setStats({
+        totalConsultations,
+        paidConsultations,
+        totalRevenue,
+        consultationToSaleRate,
+        avgTicket
+      });
+
+      setCustomers(customersData || []);
+
+      // Prepare chart data
+      const dailyData = prepareDailyChartData(reports || [], payments || [], startDate, endDate);
+      setChartData(dailyData);
+
+    } catch (error) {
+      console.error('[AdminDashboard] Erro ao buscar dados:', error);
+      toast({
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar os dados do dashboard.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchDashboardData();
+  }, [isAdmin, period, customDateStart, customDateEnd]);
 
   const handleExportCustomers = () => {
     if (customers.length === 0) {
@@ -472,7 +362,7 @@ const AdminDashboard = () => {
             <h1 className="text-2xl font-bold text-white">
               Checkplaca - Admin
             </h1>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <Button 
                 variant="outline"
                 onClick={() => navigate("/admin/customer-sync")}
@@ -509,9 +399,18 @@ const AdminDashboard = () => {
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold mb-2">Dashboard</h2>
-            <p className="text-muted-foreground">Visão geral completa das métricas</p>
+            <p className="text-muted-foreground">Visão geral das métricas de negócio</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={fetchDashboardData}
+              disabled={isRefreshing}
+              className="mr-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-[180px]">
@@ -553,263 +452,19 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Lovable Analytics Section */}
-        {analyticsStats && (
-          <>
-            <div className="mb-6">
-              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                <BarChart3 className="w-6 h-6 text-primary" />
-                Analytics de Tráfego
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-              <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-blue-500">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Visitantes
-                  </CardTitle>
-                  <Users className="w-5 h-5 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-500">
-                    {analyticsStats.visitors.toLocaleString('pt-BR')}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Visitantes únicos
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-purple-500">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Pageviews
-                  </CardTitle>
-                  <Eye className="w-5 h-5 text-purple-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-purple-500">
-                    {analyticsStats.pageviews.toLocaleString('pt-BR')}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Páginas visualizadas
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-green-500">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Duração Média
-                  </CardTitle>
-                  <Clock className="w-5 h-5 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-500">
-                    {analyticsStats.avgDuration}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Tempo médio no site
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-orange-500">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Bounce Rate
-                  </CardTitle>
-                  <TrendingUp className="w-5 h-5 text-orange-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-orange-500">
-                    {analyticsStats.bounceRate}%
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Taxa de rejeição
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Time Series Chart */}
-            <Card className="mb-6 shadow-soft">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  Evolução de Visitantes e Pageviews
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    visitors: {
-                      label: "Visitantes",
-                      color: "hsl(var(--chart-1))",
-                    },
-                    pageviews: {
-                      label: "Pageviews",
-                      color: "hsl(var(--chart-2))",
-                    },
-                  }}
-                  className="h-[300px] w-full"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={analyticsStats.timeSeriesData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis 
-                        dataKey="date" 
-                        className="text-xs"
-                        stroke="hsl(var(--muted-foreground))"
-                      />
-                      <YAxis 
-                        className="text-xs"
-                        stroke="hsl(var(--muted-foreground))"
-                      />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line 
-                        type="monotone" 
-                        dataKey="visitors" 
-                        stroke="hsl(var(--chart-1))" 
-                        strokeWidth={2}
-                        dot={{ fill: "hsl(var(--chart-1))", r: 4 }}
-                        activeDot={{ r: 6 }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="pageviews" 
-                        stroke="hsl(var(--chart-2))" 
-                        strokeWidth={2}
-                        dot={{ fill: "hsl(var(--chart-2))", r: 4 }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-
-            {/* Analytics Details Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              {/* Top Pages */}
-              <Card className="shadow-soft">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Eye className="w-5 h-5" />
-                    Páginas Mais Visitadas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {analyticsStats.topPages.map((page, idx) => (
-                      <div key={idx} className="flex justify-between items-center">
-                        <span className="text-sm truncate flex-1 text-muted-foreground">
-                          {page.path}
-                        </span>
-                        <span className="text-sm font-semibold ml-2">
-                          {page.count.toLocaleString('pt-BR')}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Traffic Sources */}
-              <Card className="shadow-soft">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Target className="w-5 h-5" />
-                    Origem do Tráfego
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {analyticsStats.sources.map((source, idx) => (
-                      <div key={idx} className="flex justify-between items-center">
-                        <span className="text-sm truncate flex-1 text-muted-foreground">
-                          {source.source}
-                        </span>
-                        <span className="text-sm font-semibold ml-2">
-                          {source.count.toLocaleString('pt-BR')}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Devices */}
-              <Card className="shadow-soft">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Monitor className="w-5 h-5" />
-                    Dispositivos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {analyticsStats.devices.map((device, idx) => (
-                      <div key={idx} className="flex justify-between items-center">
-                        <div className="flex items-center gap-2 flex-1">
-                          {device.device.toLowerCase().includes('mobile') ? (
-                            <Smartphone className="w-4 h-4 text-muted-foreground" />
-                          ) : (
-                            <Monitor className="w-4 h-4 text-muted-foreground" />
-                          )}
-                          <span className="text-sm text-muted-foreground">
-                            {device.device}
-                          </span>
-                        </div>
-                        <span className="text-sm font-semibold ml-2">
-                          {device.count.toLocaleString('pt-BR')}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </>
-        )}
-
-        {/* Business Stats Section */}
-        <div className="mb-6">
-          <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-accent" />
-            Métricas de Negócio
-          </h3>
-        </div>
-
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-8">
           <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-primary">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Sessões Reais
+                Consultas
               </CardTitle>
-              <Eye className="w-5 h-5 text-primary" />
+              <Search className="w-5 h-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalSessions.toLocaleString('pt-BR')}</div>
+              <div className="text-3xl font-bold">{stats.totalConsultations.toLocaleString('pt-BR')}</div>
               <p className="text-xs text-muted-foreground mt-2">
-                Usuários únicos
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-secondary">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Consultas Gratuitas
-              </CardTitle>
-              <Search className="w-5 h-5 text-secondary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-secondary">{stats.freeConsultations.toLocaleString('pt-BR')}</div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Relatórios básicos
+                Total no período
               </p>
             </CardContent>
           </Card>
@@ -843,37 +498,39 @@ const AdminDashboard = () => {
                 R$ {stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {stats.paidConsultations} vendas via PIX
+                Via PIX
               </p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-primary">
+          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-blue-500">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Sessão → Consulta
+                Taxa de Conversão
               </CardTitle>
-              <Target className="w-5 h-5 text-primary" />
+              <Target className="w-5 h-5 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.sessionToConsultationRate.toFixed(1)}%</div>
+              <div className="text-3xl font-bold text-blue-500">{stats.consultationToSaleRate.toFixed(1)}%</div>
               <p className="text-xs text-muted-foreground mt-2">
-                Taxa de conversão
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-accent">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Consulta → Venda
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-purple-500">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Ticket Médio
               </CardTitle>
-              <TrendingUp className="w-5 h-5 text-accent" />
+              <TrendingUp className="w-5 h-5 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-accent">{stats.consultationToSaleRate.toFixed(1)}%</div>
+              <div className="text-3xl font-bold text-purple-500">
+                R$ {stats.avgTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Taxa de conversão
+                Por venda
               </p>
             </CardContent>
           </Card>
@@ -893,7 +550,7 @@ const AdminDashboard = () => {
                 config={{
                   consultas: {
                     label: "Consultas",
-                    color: "hsl(var(--secondary))",
+                    color: "hsl(var(--primary))",
                   },
                   vendas: {
                     label: "Vendas",
@@ -908,7 +565,7 @@ const AdminDashboard = () => {
                     <XAxis dataKey="date" />
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="consultas" fill="hsl(var(--secondary))" />
+                    <Bar dataKey="consultas" fill="hsl(var(--primary))" />
                     <Bar dataKey="vendas" fill="hsl(var(--accent))" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -920,14 +577,14 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
-                Evolução de Vendas
+                Evolução da Receita
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer
                 config={{
-                  vendas: {
-                    label: "Vendas",
+                  receita: {
+                    label: "Receita (R$)",
                     color: "hsl(var(--accent))",
                   },
                 }}
@@ -939,7 +596,7 @@ const AdminDashboard = () => {
                     <XAxis dataKey="date" />
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line type="monotone" dataKey="vendas" stroke="hsl(var(--accent))" strokeWidth={2} />
+                    <Line type="monotone" dataKey="receita" stroke="hsl(var(--accent))" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -947,10 +604,91 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
+        {/* UTM Attribution Summary */}
+        {customers.length > 0 && (
+          <Card className="shadow-soft mb-8">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Atribuição de Vendas (UTM)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* By Source */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Por Origem (Source)</h4>
+                  <div className="space-y-2">
+                    {Object.entries(
+                      customers.reduce((acc, c) => {
+                        const source = c.utm_source || 'Direto';
+                        acc[source] = (acc[source] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    )
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 5)
+                      .map(([source, count]) => (
+                        <div key={source} className="flex justify-between items-center">
+                          <span className="text-sm truncate">{source}</span>
+                          <Badge variant="secondary">{count}</Badge>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* By Medium */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Por Mídia (Medium)</h4>
+                  <div className="space-y-2">
+                    {Object.entries(
+                      customers.reduce((acc, c) => {
+                        const medium = c.utm_medium || 'Não definido';
+                        acc[medium] = (acc[medium] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    )
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 5)
+                      .map(([medium, count]) => (
+                        <div key={medium} className="flex justify-between items-center">
+                          <span className="text-sm truncate">{medium}</span>
+                          <Badge variant="secondary">{count}</Badge>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* By Campaign */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Por Campanha</h4>
+                  <div className="space-y-2">
+                    {Object.entries(
+                      customers.reduce((acc, c) => {
+                        const campaign = c.utm_campaign || 'Sem campanha';
+                        acc[campaign] = (acc[campaign] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    )
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 5)
+                      .map(([campaign, count]) => (
+                        <div key={campaign} className="flex justify-between items-center">
+                          <span className="text-sm truncate">{campaign}</span>
+                          <Badge variant="secondary">{count}</Badge>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Customers Table */}
         <Card className="shadow-strong">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <CardTitle className="text-xl flex items-center gap-2">
                   <Users className="w-6 h-6" />
