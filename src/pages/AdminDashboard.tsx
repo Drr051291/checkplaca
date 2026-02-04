@@ -1,26 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Search, DollarSign, TrendingUp, Calendar, Eye, Download, Users, ShoppingCart, Target, BarChart3, RefreshCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { LogOut, Calendar, RefreshCw, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-
-interface DashboardStats {
-  totalConsultations: number;
-  paidConsultations: number;
-  totalRevenue: number;
-  consultationToSaleRate: number;
-  avgTicket: number;
-}
+import { DashboardStats } from "@/components/admin/DashboardStats";
+import { DashboardCharts } from "@/components/admin/DashboardCharts";
+import { UtmAttribution } from "@/components/admin/UtmAttribution";
+import { CustomersTable } from "@/components/admin/CustomersTable";
 
 interface Customer {
   id: string;
@@ -51,10 +42,17 @@ const AdminDashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [visitors, setVisitors] = useState(0);
+  const [totalConsultations, setTotalConsultations] = useState(0);
+  const [paidConsultations, setPaidConsultations] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [consultationToSaleRate, setConsultationToSaleRate] = useState(0);
+  const [avgTicket, setAvgTicket] = useState(0);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [period, setPeriod] = useState<string>("7");
+  const [originData, setOriginData] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [conversionFunnel, setConversionFunnel] = useState<{ stage: string; value: number; color: string }[]>([]);
+  const [period, setPeriod] = useState<string>("thisMonth");
   const [customDateStart, setCustomDateStart] = useState<string>("");
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -154,10 +152,10 @@ const AdminDashboard = () => {
             endDate: new Date(customDateEnd + 'T23:59:59').toISOString()
           };
         }
-        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
         break;
       default:
-        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     }
 
     return { startDate, endDate };
@@ -169,13 +167,11 @@ const AdminDashboard = () => {
     const start = new Date(startDate);
     const end = new Date(endDate);
     
-    // Initialize all dates in range
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateKey = d.toISOString().split('T')[0];
       dailyMap.set(dateKey, { consultas: 0, vendas: 0, receita: 0 });
     }
 
-    // Count consultations per day
     reports.forEach(report => {
       const dateKey = new Date(report.created_at).toISOString().split('T')[0];
       if (dailyMap.has(dateKey)) {
@@ -184,7 +180,6 @@ const AdminDashboard = () => {
       }
     });
 
-    // Count sales and revenue per day
     payments.forEach(payment => {
       const dateKey = new Date(payment.created_at).toISOString().split('T')[0];
       if (dailyMap.has(dateKey)) {
@@ -203,7 +198,7 @@ const AdminDashboard = () => {
         date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
         ...data
       }))
-      .slice(-30); // Show last 30 days max
+      .slice(-30);
   };
 
   const fetchDashboardData = async () => {
@@ -214,13 +209,13 @@ const AdminDashboard = () => {
       // Fetch all vehicle reports (total consultations)
       const { data: reports, error: reportsError } = await supabase
         .from('vehicle_reports')
-        .select('id, created_at, user_id')
+        .select('id, created_at')
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
       if (reportsError) throw reportsError;
 
-      // Fetch all payments (paid sales)
+      // Fetch all paid payments
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
         .select('*')
@@ -240,34 +235,57 @@ const AdminDashboard = () => {
 
       if (customersError) throw customersError;
 
+      // Fetch plate queries for visitor estimate
+      const { data: plateQueries, error: plateError } = await supabase
+        .from('plate_queries')
+        .select('id, created_at')
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
+
+      if (plateError) throw plateError;
+
       // Calculate statistics
-      const totalConsultations = reports?.length || 0;
-      const paidConsultations = payments?.length || 0;
-      const totalRevenue = payments?.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0')), 0) || 0;
+      const consultations = reports?.length || 0;
+      const sales = payments?.length || 0;
+      const revenue = payments?.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0')), 0) || 0;
+      const convRate = consultations > 0 ? ((sales / consultations) * 100) : 0;
+      const ticket = sales > 0 ? revenue / sales : 0;
+      
+      // Estimate visitors as plate queries (unique searches)
+      const visitorCount = plateQueries?.length || 0;
 
-      // Conversion rate
-      const consultationToSaleRate = totalConsultations > 0 
-        ? ((paidConsultations / totalConsultations) * 100)
-        : 0;
-
-      // Average ticket
-      const avgTicket = paidConsultations > 0 
-        ? totalRevenue / paidConsultations
-        : 0;
-
-      setStats({
-        totalConsultations,
-        paidConsultations,
-        totalRevenue,
-        consultationToSaleRate,
-        avgTicket
-      });
-
+      setVisitors(visitorCount);
+      setTotalConsultations(consultations);
+      setPaidConsultations(sales);
+      setTotalRevenue(revenue);
+      setConsultationToSaleRate(convRate);
+      setAvgTicket(ticket);
       setCustomers(customersData || []);
 
       // Prepare chart data
       const dailyData = prepareDailyChartData(reports || [], payments || [], startDate, endDate);
       setChartData(dailyData);
+
+      // Prepare origin data for pie chart
+      const origins = (customersData || []).reduce((acc, c) => {
+        const source = c.utm_source || 'Direto';
+        acc[source] = (acc[source] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      setOriginData(
+        Object.entries(origins)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 7)
+          .map(([name, value]) => ({ name, value, color: '' }))
+      );
+
+      // Prepare conversion funnel
+      setConversionFunnel([
+        { stage: 'Visitantes', value: visitorCount, color: '#8B5CF6' },
+        { stage: 'Consultas', value: consultations, color: 'hsl(var(--primary))' },
+        { stage: 'Vendas', value: sales, color: 'hsl(var(--accent))' },
+      ]);
 
     } catch (error) {
       console.error('[AdminDashboard] Erro ao buscar dados:', error);
@@ -286,48 +304,6 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, [isAdmin, period, customDateStart, customDateEnd]);
 
-  const handleExportCustomers = () => {
-    if (customers.length === 0) {
-      toast({
-        title: "Nenhum cliente",
-        description: "Não há clientes para exportar no período selecionado.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const csvContent = [
-      ['Nome', 'Email', 'Telefone', 'CPF', 'Placa', 'Valor', 'Data', 'Origem (Source)', 'Mídia (Medium)', 'Campanha', 'Termo', 'Conteúdo', 'Referrer', 'Landing Page'],
-      ...customers.map(c => [
-        c.name,
-        c.email,
-        c.phone,
-        c.cpf,
-        c.plate,
-        `R$ ${c.amount.toFixed(2)}`,
-        new Date(c.created_at).toLocaleString('pt-BR'),
-        c.utm_source || 'Direto',
-        c.utm_medium || '-',
-        c.utm_campaign || '-',
-        c.utm_term || '-',
-        c.utm_content || '-',
-        c.referrer || '-',
-        c.landing_page || '-'
-      ])
-    ].map(row => row.join(';')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `clientes_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-
-    toast({
-      title: "Exportação concluída",
-      description: `${customers.length} clientes exportados com sucesso.`,
-    });
-  };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
@@ -340,66 +316,66 @@ const AdminDashboard = () => {
   if (loading || !isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Verificando permissões...</p>
-      </div>
-    );
-  }
-
-  if (!stats) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Carregando dados...</p>
+        <div className="flex flex-col items-center gap-2">
+          <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+          <p className="text-muted-foreground">Verificando permissões...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <header className="border-b border-border bg-gradient-hero sticky top-0 z-50 shadow-soft">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h1 className="text-2xl font-bold text-white">
-              Checkplaca - Admin
-            </h1>
-            <div className="flex items-center gap-4 flex-wrap">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="flex items-center gap-2">
+              <LayoutDashboard className="w-6 h-6 text-white" />
+              <h1 className="text-xl font-bold text-white">
+                Checkplaca Admin
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap justify-center">
               <Button 
                 variant="outline"
+                size="sm"
                 onClick={() => navigate("/admin/customer-sync")}
                 className="bg-white/10 text-white border-white/20 hover:bg-white/20"
               >
-                <RefreshCw className="mr-2 w-4 h-4" />
-                Sincronizar Clientes
+                <RefreshCw className="mr-1.5 w-3.5 h-3.5" />
+                Sincronizar
               </Button>
               <Button 
                 variant="outline"
+                size="sm"
                 onClick={() => navigate("/admin/blog")}
                 className="bg-white/10 text-white border-white/20 hover:bg-white/20"
               >
-                Gerenciar Blog
+                Blog
               </Button>
-              <p className="text-sm text-white/80">
+              <span className="text-xs text-white/70 hidden sm:inline">
                 {session?.user.email}
-              </p>
+              </span>
               <Button 
                 variant="ghost"
+                size="sm"
                 onClick={handleLogout}
                 className="text-white hover:text-white hover:bg-white/10"
               >
-                <LogOut className="mr-2 w-4 h-4" />
-                Sair
+                <LogOut className="w-4 h-4" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
         {/* Title and Period Filter */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold mb-2">Dashboard</h2>
-            <p className="text-muted-foreground">Visão geral das métricas de negócio</p>
+            <h2 className="text-2xl font-bold">Dashboard</h2>
+            <p className="text-sm text-muted-foreground">Métricas e performance do Checkplaca</p>
           </div>
           <div className="flex items-center gap-2">
             <Button 
@@ -407,13 +383,12 @@ const AdminDashboard = () => {
               size="icon"
               onClick={fetchDashboardData}
               disabled={isRefreshing}
-              className="mr-2"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
@@ -430,9 +405,9 @@ const AdminDashboard = () => {
 
         {/* Custom Date Range */}
         {period === "custom" && (
-          <div className="mb-8 flex gap-4 items-end">
+          <div className="mb-6 flex gap-4 items-end bg-background p-4 rounded-lg border">
             <div className="flex-1">
-              <Label htmlFor="startDate">Data Inicial</Label>
+              <Label htmlFor="startDate" className="text-xs">Data Inicial</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -441,7 +416,7 @@ const AdminDashboard = () => {
               />
             </div>
             <div className="flex-1">
-              <Label htmlFor="endDate">Data Final</Label>
+              <Label htmlFor="endDate" className="text-xs">Data Final</Label>
               <Input
                 id="endDate"
                 type="date"
@@ -453,327 +428,28 @@ const AdminDashboard = () => {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-8">
-          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-primary">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Consultas
-              </CardTitle>
-              <Search className="w-5 h-5 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.totalConsultations.toLocaleString('pt-BR')}</div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Total no período
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-accent">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Vendas
-              </CardTitle>
-              <ShoppingCart className="w-5 h-5 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-accent">
-                {stats.paidConsultations.toLocaleString('pt-BR')}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Relatórios pagos
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-accent">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Receita Total
-              </CardTitle>
-              <DollarSign className="w-5 h-5 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-accent">
-                R$ {stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Via PIX
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-blue-500">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Taxa de Conversão
-              </CardTitle>
-              <Target className="w-5 h-5 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-500">{stats.consultationToSaleRate.toFixed(1)}%</div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Consulta → Venda
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft hover:shadow-strong transition-smooth border-l-4 border-l-purple-500">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Ticket Médio
-              </CardTitle>
-              <TrendingUp className="w-5 h-5 text-purple-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-purple-500">
-                R$ {stats.avgTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Por venda
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <DashboardStats
+          visitors={visitors}
+          totalConsultations={totalConsultations}
+          paidConsultations={paidConsultations}
+          totalRevenue={totalRevenue}
+          consultationToSaleRate={consultationToSaleRate}
+          avgTicket={avgTicket}
+          totalCustomers={customers.length}
+        />
 
         {/* Charts */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Consultas vs Vendas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  consultas: {
-                    label: "Consultas",
-                    color: "hsl(var(--primary))",
-                  },
-                  vendas: {
-                    label: "Vendas",
-                    color: "hsl(var(--accent))",
-                  },
-                }}
-                className="h-[300px]"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="consultas" fill="hsl(var(--primary))" />
-                    <Bar dataKey="vendas" fill="hsl(var(--accent))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+        <DashboardCharts
+          chartData={chartData}
+          originData={originData}
+          conversionFunnel={conversionFunnel}
+        />
 
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Evolução da Receita
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  receita: {
-                    label: "Receita (R$)",
-                    color: "hsl(var(--accent))",
-                  },
-                }}
-                className="h-[300px]"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line type="monotone" dataKey="receita" stroke="hsl(var(--accent))" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* UTM Attribution Summary */}
-        {customers.length > 0 && (
-          <Card className="shadow-soft mb-8">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="w-5 h-5" />
-                Atribuição de Vendas (UTM)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* By Source */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Por Origem (Source)</h4>
-                  <div className="space-y-2">
-                    {Object.entries(
-                      customers.reduce((acc, c) => {
-                        const source = c.utm_source || 'Direto';
-                        acc[source] = (acc[source] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    )
-                      .sort(([, a], [, b]) => b - a)
-                      .slice(0, 5)
-                      .map(([source, count]) => (
-                        <div key={source} className="flex justify-between items-center">
-                          <span className="text-sm truncate">{source}</span>
-                          <Badge variant="secondary">{count}</Badge>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                {/* By Medium */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Por Mídia (Medium)</h4>
-                  <div className="space-y-2">
-                    {Object.entries(
-                      customers.reduce((acc, c) => {
-                        const medium = c.utm_medium || 'Não definido';
-                        acc[medium] = (acc[medium] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    )
-                      .sort(([, a], [, b]) => b - a)
-                      .slice(0, 5)
-                      .map(([medium, count]) => (
-                        <div key={medium} className="flex justify-between items-center">
-                          <span className="text-sm truncate">{medium}</span>
-                          <Badge variant="secondary">{count}</Badge>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                {/* By Campaign */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Por Campanha</h4>
-                  <div className="space-y-2">
-                    {Object.entries(
-                      customers.reduce((acc, c) => {
-                        const campaign = c.utm_campaign || 'Sem campanha';
-                        acc[campaign] = (acc[campaign] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    )
-                      .sort(([, a], [, b]) => b - a)
-                      .slice(0, 5)
-                      .map(([campaign, count]) => (
-                        <div key={campaign} className="flex justify-between items-center">
-                          <span className="text-sm truncate">{campaign}</span>
-                          <Badge variant="secondary">{count}</Badge>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* UTM Attribution */}
+        <UtmAttribution customers={customers} />
 
         {/* Customers Table */}
-        <Card className="shadow-strong">
-          <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Users className="w-6 h-6" />
-                  Base de Clientes
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {customers.length} clientes no período selecionado
-                </p>
-              </div>
-              <Button onClick={handleExportCustomers} variant="outline">
-                <Download className="mr-2 w-4 h-4" />
-                Exportar CSV
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead>Placa</TableHead>
-                    <TableHead>Origem</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Data</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customers.length > 0 ? (
-                    customers.map((customer) => (
-                      <TableRow key={customer.id}>
-                        <TableCell className="font-medium">{customer.name}</TableCell>
-                        <TableCell>{customer.email}</TableCell>
-                        <TableCell>{customer.phone}</TableCell>
-                        <TableCell className="font-mono font-bold">{customer.plate}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {customer.utm_source && (
-                              <Badge variant="secondary" className="text-xs">
-                                {customer.utm_source}
-                              </Badge>
-                            )}
-                            {customer.utm_medium && (
-                              <div className="text-xs text-muted-foreground">
-                                Mídia: {customer.utm_medium}
-                              </div>
-                            )}
-                            {customer.utm_campaign && (
-                              <div className="text-xs text-muted-foreground">
-                                Campanha: {customer.utm_campaign}
-                              </div>
-                            )}
-                            {!customer.utm_source && !customer.utm_medium && !customer.utm_campaign && (
-                              <span className="text-xs text-muted-foreground">Direto</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-accent">
-                          R$ {customer.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(customer.created_at).toLocaleString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        Nenhum cliente no período selecionado
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+        <CustomersTable customers={customers} />
       </div>
     </div>
   );
