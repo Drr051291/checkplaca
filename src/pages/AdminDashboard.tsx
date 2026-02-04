@@ -161,7 +161,7 @@ const AdminDashboard = () => {
     return { startDate, endDate };
   };
 
-  const prepareDailyChartData = (reports: any[], payments: any[], startDate: string, endDate: string) => {
+  const prepareDailyChartData = (plateQueries: any[], orders: any[], startDate: string, endDate: string) => {
     const dailyMap = new Map<string, { consultas: number; vendas: number; receita: number }>();
     
     const start = new Date(startDate);
@@ -172,19 +172,19 @@ const AdminDashboard = () => {
       dailyMap.set(dateKey, { consultas: 0, vendas: 0, receita: 0 });
     }
 
-    reports.forEach(report => {
-      const dateKey = new Date(report.created_at).toISOString().split('T')[0];
+    plateQueries.forEach(query => {
+      const dateKey = new Date(query.created_at).toISOString().split('T')[0];
       if (dailyMap.has(dateKey)) {
         const existing = dailyMap.get(dateKey)!;
         dailyMap.set(dateKey, { ...existing, consultas: existing.consultas + 1 });
       }
     });
 
-    payments.forEach(payment => {
-      const dateKey = new Date(payment.created_at).toISOString().split('T')[0];
+    orders.forEach(order => {
+      const dateKey = new Date(order.created_at).toISOString().split('T')[0];
       if (dailyMap.has(dateKey)) {
         const existing = dailyMap.get(dateKey)!;
-        const amount = parseFloat(payment.amount?.toString() || '0');
+        const amount = (order.amount_cents || 0) / 100;
         dailyMap.set(dateKey, { 
           ...existing, 
           vendas: existing.vendas + 1,
@@ -206,26 +206,26 @@ const AdminDashboard = () => {
       setIsRefreshing(true);
       const { startDate, endDate } = getDateRange();
 
-      // Fetch all vehicle reports (total consultations)
-      const { data: reports, error: reportsError } = await supabase
-        .from('vehicle_reports')
+      // Fetch plate queries (consultations + visitors)
+      const { data: plateQueries, error: plateError } = await supabase
+        .from('plate_queries')
         .select('id, created_at')
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
-      if (reportsError) throw reportsError;
+      if (plateError) throw plateError;
 
-      // Fetch all paid payments
-      const { data: payments, error: paymentsError } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('status', 'paid')
+      // Fetch paid orders (sales + revenue)
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('id, created_at, amount_cents')
+        .eq('payment_status', 'paid')
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
-      if (paymentsError) throw paymentsError;
+      if (ordersError) throw ordersError;
 
-      // Fetch customers
+      // Fetch customers for UTM data
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
         .select('*')
@@ -235,24 +235,15 @@ const AdminDashboard = () => {
 
       if (customersError) throw customersError;
 
-      // Fetch plate queries for visitor estimate
-      const { data: plateQueries, error: plateError } = await supabase
-        .from('plate_queries')
-        .select('id, created_at')
-        .gte('created_at', startDate)
-        .lte('created_at', endDate);
-
-      if (plateError) throw plateError;
-
-      // Calculate statistics
-      const consultations = reports?.length || 0;
-      const sales = payments?.length || 0;
-      const revenue = payments?.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0')), 0) || 0;
+      // Calculate statistics from correct tables
+      const consultations = plateQueries?.length || 0;
+      const sales = orders?.length || 0;
+      const revenue = orders?.reduce((sum, o) => sum + ((o.amount_cents || 0) / 100), 0) || 0;
       const convRate = consultations > 0 ? ((sales / consultations) * 100) : 0;
       const ticket = sales > 0 ? revenue / sales : 0;
       
-      // Estimate visitors as plate queries (unique searches)
-      const visitorCount = plateQueries?.length || 0;
+      // Visitors = plate queries (unique searches)
+      const visitorCount = consultations;
 
       setVisitors(visitorCount);
       setTotalConsultations(consultations);
@@ -262,16 +253,21 @@ const AdminDashboard = () => {
       setAvgTicket(ticket);
       setCustomers(customersData || []);
 
-      // Prepare chart data
-      const dailyData = prepareDailyChartData(reports || [], payments || [], startDate, endDate);
+      // Prepare chart data using plate_queries and orders
+      const dailyData = prepareDailyChartData(plateQueries || [], orders || [], startDate, endDate);
       setChartData(dailyData);
 
-      // Prepare origin data for pie chart
+      // Prepare origin data for pie chart from customers UTM
       const origins = (customersData || []).reduce((acc, c) => {
         const source = c.utm_source || 'Direto';
         acc[source] = (acc[source] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
+
+      // If no UTM data, show "Direto" as fallback
+      if (Object.keys(origins).length === 0 && sales > 0) {
+        origins['Direto'] = sales;
+      }
 
       setOriginData(
         Object.entries(origins)
