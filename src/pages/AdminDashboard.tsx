@@ -56,8 +56,35 @@ const AdminDashboard = () => {
   const [customDateStart, setCustomDateStart] = useState<string>("");
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleSyncCustomers = async () => {
+    try {
+      setIsSyncing(true);
+      const { data, error } = await supabase.functions.invoke('sync-customers');
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Sincronização concluída",
+        description: `${data.synced} novos clientes importados do Asaas.`,
+      });
+      
+      // Refresh dashboard data
+      await fetchDashboardData();
+    } catch (error: any) {
+      console.error('[AdminDashboard] Erro ao sincronizar:', error);
+      toast({
+        title: "Erro na sincronização",
+        description: error.message || "Não foi possível sincronizar clientes do Asaas.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -336,11 +363,12 @@ const AdminDashboard = () => {
               <Button 
                 variant="outline"
                 size="sm"
-                onClick={() => navigate("/admin/customer-sync")}
+                onClick={handleSyncCustomers}
+                disabled={isSyncing}
                 className="bg-white/10 text-white border-white/20 hover:bg-white/20"
               >
-                <RefreshCw className="mr-1.5 w-3.5 h-3.5" />
-                Sincronizar
+                <RefreshCw className={`mr-1.5 w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Sincronizando...' : 'Sync Asaas'}
               </Button>
               <Button 
                 variant="outline"
@@ -353,7 +381,7 @@ const AdminDashboard = () => {
               <span className="text-xs text-white/70 hidden sm:inline">
                 {session?.user.email}
               </span>
-              <Button 
+              <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
