@@ -21,60 +21,58 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('[sync-customers] Iniciando sincronização de clientes...');
+    console.log('[sync-customers] Iniciando sincronização de clientes do Asaas...');
 
-    // Busca todos os pagamentos que não têm registro na tabela customers
-    const { data: payments, error: paymentsError } = await supabase
-      .from('payments')
-      .select('id, report_id, asaas_customer_id, asaas_payment_id, plan_type, amount, created_at')
-      .is('asaas_customer_id', null)
-      .eq('status', 'paid');
+    // Busca todos os pedidos pagos que têm asaas_customer_id
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select(`
+        id, 
+        created_at, 
+        amount_cents, 
+        asaas_customer_id, 
+        asaas_payment_id,
+        plate_query_id,
+        plate_queries!inner(placa)
+      `)
+      .eq('payment_status', 'paid')
+      .not('asaas_customer_id', 'is', null);
 
-    if (paymentsError) {
-      console.error('[sync-customers] Erro ao buscar pagamentos:', paymentsError);
-      throw paymentsError;
+    if (ordersError) {
+      console.error('[sync-customers] Erro ao buscar orders:', ordersError);
+      throw ordersError;
     }
 
-    if (!payments || payments.length === 0) {
-      console.log('[sync-customers] Nenhum pagamento para sincronizar');
+    if (!orders || orders.length === 0) {
+      console.log('[sync-customers] Nenhum pedido com cliente Asaas encontrado');
       return new Response(
-        JSON.stringify({ success: true, message: 'Nenhum pagamento para sincronizar', synced: 0 }),
+        JSON.stringify({ success: true, message: 'Nenhum pedido para sincronizar', synced: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`[sync-customers] Encontrados ${payments.length} pagamentos para sincronizar`);
+    console.log(`[sync-customers] Encontrados ${orders.length} pedidos para sincronizar`);
 
     let syncedCount = 0;
+    let skippedCount = 0;
     let errorCount = 0;
+    const syncedCustomers: any[] = [];
 
-    // Para cada pagamento, busca os dados do cliente no Asaas
-    for (const payment of payments) {
+    for (const order of orders) {
       try {
-        // Busca o payment no Asaas para obter o customer_id
-        const paymentResponse = await fetch(
-          `https://api.asaas.com/v3/payments/${payment.asaas_payment_id}`,
-          {
-            method: 'GET',
-            headers: {
-              'access_token': asaasApiKey,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        const customerId = order.asaas_customer_id;
+        const plate = (order as any).plate_queries?.placa || 'N/A';
 
-        if (!paymentResponse.ok) {
-          console.error(`[sync-customers] Erro ao buscar payment ${payment.asaas_payment_id}`);
-          errorCount++;
-          continue;
-        }
+        // Verifica se já existe um customer com este order id ou asaas_customer_id + placa
+        const { data: existingCustomer } = await supabase
+          .from('customers')
+          .select('id')
+          .or(`payment_id.eq.${order.id},and(plate.eq.${plate},created_at.gte.${order.created_at.split('T')[0]})`)
+          .maybeSingle();
 
-        const paymentData = await paymentResponse.json();
-        const customerId = paymentData.customer;
-
-        if (!customerId) {
-          console.error(`[sync-customers] Customer ID não encontrado para payment ${payment.asaas_payment_id}`);
-          errorCount++;
+        if (existingCustomer) {
+          console.log(`[sync-customers] Customer já existe para order ${order.id}, pulando...`);
+          skippedCount++;
           continue;
         }
 
@@ -98,68 +96,60 @@ serve(async (req) => {
 
         const customerData = await customerResponse.json();
 
-        // Busca a placa do relatório
-        const { data: reportData } = await supabase
-          .from('vehicle_reports')
-          .select('plate')
-          .eq('id', payment.report_id)
-          .single();
-
-        const plate = reportData?.plate || 'N/A';
-
-        // Verifica se já existe um customer com este payment_id
-        const { data: existingCustomer } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('payment_id', payment.id)
-          .maybeSingle();
-
-        if (existingCustomer) {
-          console.log(`[sync-customers] Customer já existe para payment ${payment.id}, pulando...`);
-          continue;
-        }
+        // Gera um UUID para report_id já que orders usa plate_query_id
+        const reportId = crypto.randomUUID();
 
         // Insere os dados do cliente na tabela customers
+        const customerRecord = {
+          report_id: reportId,
+          payment_id: order.id,
+          name: customerData.name || 'Cliente',
+          email: customerData.email || 'sem-email@checkplaca.com',
+          phone: customerData.phone || customerData.mobilePhone || '00000000000',
+          cpf: customerData.cpfCnpj || '00000000000',
+          plate: plate,
+          plan_type: 'completo',
+          amount: (order.amount_cents || 1790) / 100,
+          created_at: order.created_at,
+        };
+
         const { error: insertError } = await supabase
           .from('customers')
-          .insert({
-            report_id: payment.report_id,
-            payment_id: payment.id,
-            name: customerData.name || 'N/A',
-            email: customerData.email || 'contato@checkplaca.com',
-            phone: customerData.phone || '00000000000',
-            cpf: customerData.cpfCnpj || '00000000000',
-            plate: plate,
-            plan_type: payment.plan_type,
-            amount: payment.amount,
-            created_at: payment.created_at,
-          });
+          .insert(customerRecord);
 
         if (insertError) {
-          console.error(`[sync-customers] Erro ao inserir customer para payment ${payment.id}:`, insertError);
+          console.error(`[sync-customers] Erro ao inserir customer para order ${order.id}:`, insertError);
           errorCount++;
         } else {
-          console.log(`[sync-customers] Customer sincronizado com sucesso para payment ${payment.id}`);
+          console.log(`[sync-customers] Customer sincronizado: ${customerData.name} - ${plate}`);
           syncedCount++;
+          syncedCustomers.push({
+            name: customerData.name,
+            email: customerData.email,
+            plate: plate,
+            amount: customerRecord.amount,
+          });
         }
 
         // Delay para não sobrecarregar a API do Asaas
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300));
 
       } catch (error) {
-        console.error(`[sync-customers] Erro ao processar payment ${payment.id}:`, error);
+        console.error(`[sync-customers] Erro ao processar order ${order.id}:`, error);
         errorCount++;
       }
     }
 
-    console.log(`[sync-customers] Sincronização concluída. Sucesso: ${syncedCount}, Erros: ${errorCount}`);
+    console.log(`[sync-customers] Sincronização concluída. Novos: ${syncedCount}, Existentes: ${skippedCount}, Erros: ${errorCount}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         synced: syncedCount,
+        skipped: skippedCount,
         errors: errorCount,
-        total: payments.length,
+        total: orders.length,
+        customers: syncedCustomers,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
