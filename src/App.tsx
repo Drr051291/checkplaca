@@ -50,6 +50,7 @@ const App = () => (
           <Route path="/sitemap.xml" element={<Sitemap />} />
           <Route path="/generate-favicon" element={<FaviconGenerator />} />
           <Route path="/sobre" element={<About />} />
+          <Route path="/como-funciona" element={<ComoFunciona />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
