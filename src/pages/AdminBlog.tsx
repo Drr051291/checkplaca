@@ -304,6 +304,21 @@ const AdminBlog = () => {
     setDeletePostId(null);
   };
 
+  const handleHtmlImport = (html: string) => {
+    const meta = extractMetaFromHtml(html);
+    setFormData(prev => ({
+      ...prev,
+      content: meta.bodyHtml,
+      title: prev.title || meta.title,
+      slug: prev.slug || generateSlug(meta.title),
+      excerpt: prev.excerpt || meta.excerpt,
+      meta_title: prev.meta_title || meta.metaTitle,
+      meta_description: prev.meta_description || meta.metaDesc,
+      featured_image: prev.featured_image || meta.featuredImage,
+    }));
+    toast.success("HTML importado! Campos preenchidos automaticamente.");
+  };
+
   const resetForm = () => {
     setFormData({
       title: "",
