@@ -59,6 +59,7 @@ const AdminBlog = () => {
   const [editingPost, setEditingPost] = useState<any>(null);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [activeTab, setActiveTab] = useState("posts");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -271,9 +272,7 @@ const AdminBlog = () => {
       meta_title: post.meta_title || "",
       meta_description: post.meta_description || ""
     });
-    // Switch to editor tab when editing
-    const editorTab = document.querySelector('[value="editor"]') as HTMLElement;
-    editorTab?.click();
+    setActiveTab("editor");
   };
 
   const handleRestoreVersion = async (version: any) => {
@@ -360,7 +359,7 @@ const AdminBlog = () => {
       </header>
 
       <div className="container py-8">
-        <Tabs defaultValue="posts">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="editor">
