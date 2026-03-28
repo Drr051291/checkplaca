@@ -221,6 +221,7 @@ const AdminBlog = () => {
 
     const postData = {
       ...formData,
+      category_id: formData.category_id || null,
       author_id: user.id,
       published_at: formData.status === "published" ? new Date().toISOString() : null
     };
@@ -232,7 +233,8 @@ const AdminBlog = () => {
         .eq("id", editingPost.id);
 
       if (error) {
-        toast.error("Erro ao atualizar post");
+        console.error("Update error:", error);
+        toast.error(`Erro ao atualizar post: ${error.message}`);
       } else {
         toast.success("Post atualizado com sucesso!");
         clearDraft();
@@ -245,7 +247,8 @@ const AdminBlog = () => {
         .insert([postData]);
 
       if (error) {
-        toast.error("Erro ao criar post");
+        console.error("Insert error:", error);
+        toast.error(`Erro ao criar post: ${error.message}`);
       } else {
         toast.success("Post criado com sucesso!");
         clearDraft();
