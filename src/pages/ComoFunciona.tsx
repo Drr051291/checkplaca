@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { SEO, createBreadcrumbSchema } from "@/components/SEO";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import Footer from "@/components/Footer";
 import {
   Search, FileText, CreditCard, Download, Shield, Clock,
   CheckCircle, ChevronRight, Car, Zap, Lock, Eye
@@ -190,11 +191,7 @@ const ComoFunciona = () => {
         </div>
       </section>
 
-      <footer className="py-8 border-t border-border">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Checkplaca — Porto Alegre, RS. Todos os direitos reservados.
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
