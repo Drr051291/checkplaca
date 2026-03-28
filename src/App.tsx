@@ -22,6 +22,8 @@ import CheckoutNew from "./pages/CheckoutNew";
 import PaidReport from "./pages/PaidReport";
 import About from "./pages/About";
 import ComoFunciona from "./pages/ComoFunciona";
+import TermosDeUso from "./pages/TermosDeUso";
+import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,8 @@ const App = () => (
           <Route path="/generate-favicon" element={<FaviconGenerator />} />
           <Route path="/sobre" element={<About />} />
           <Route path="/como-funciona" element={<ComoFunciona />} />
+          <Route path="/termos-de-uso" element={<TermosDeUso />} />
+          <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidade />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
