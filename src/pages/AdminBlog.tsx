@@ -233,7 +233,8 @@ const AdminBlog = () => {
         .eq("id", editingPost.id);
 
       if (error) {
-        toast.error("Erro ao atualizar post");
+        console.error("Update error:", error);
+        toast.error(`Erro ao atualizar post: ${error.message}`);
       } else {
         toast.success("Post atualizado com sucesso!");
         clearDraft();
@@ -246,7 +247,8 @@ const AdminBlog = () => {
         .insert([postData]);
 
       if (error) {
-        toast.error("Erro ao criar post");
+        console.error("Insert error:", error);
+        toast.error(`Erro ao criar post: ${error.message}`);
       } else {
         toast.success("Post criado com sucesso!");
         clearDraft();
