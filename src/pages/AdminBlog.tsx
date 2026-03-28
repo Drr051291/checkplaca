@@ -221,6 +221,7 @@ const AdminBlog = () => {
 
     const postData = {
       ...formData,
+      category_id: formData.category_id || null,
       author_id: user.id,
       published_at: formData.status === "published" ? new Date().toISOString() : null
     };
