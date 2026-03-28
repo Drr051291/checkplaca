@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, Trash2, Eye, Save, Clock } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Eye, Save, Clock, Code, FileText, Upload, Copy, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -22,6 +22,33 @@ import {
 } from "@/components/ui/alert-dialog";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { PostVersionHistory } from "@/components/admin/PostVersionHistory";
+
+// Extract title, excerpt, meta from HTML
+const extractMetaFromHtml = (html: string) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  
+  const title = doc.querySelector("h1")?.textContent?.trim() || 
+                doc.querySelector("title")?.textContent?.trim() || "";
+  
+  const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute("content") || "";
+  const metaTitle = doc.querySelector("title")?.textContent?.trim() || "";
+  
+  // Get first <p> as excerpt
+  const firstP = doc.querySelector("p")?.textContent?.trim() || "";
+  const excerpt = firstP.length > 200 ? firstP.substring(0, 197) + "..." : firstP;
+
+  // Get featured image
+  const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute("content") || "";
+  const firstImg = doc.querySelector("article img, main img, .content img, img")?.getAttribute("src") || "";
+  const featuredImage = ogImage || firstImg;
+
+  // Extract only body content (strip head, html, body tags)
+  const body = doc.querySelector("article") || doc.querySelector("main") || doc.querySelector("body");
+  const bodyHtml = body?.innerHTML || html;
+
+  return { title, excerpt, metaTitle, metaDesc, featuredImage, bodyHtml };
+};
 
 const AdminBlog = () => {
   const navigate = useNavigate();
@@ -277,6 +304,21 @@ const AdminBlog = () => {
     setDeletePostId(null);
   };
 
+  const handleHtmlImport = (html: string) => {
+    const meta = extractMetaFromHtml(html);
+    setFormData(prev => ({
+      ...prev,
+      content: meta.bodyHtml,
+      title: prev.title || meta.title,
+      slug: prev.slug || generateSlug(meta.title),
+      excerpt: prev.excerpt || meta.excerpt,
+      meta_title: prev.meta_title || meta.metaTitle,
+      meta_description: prev.meta_description || meta.metaDesc,
+      featured_image: prev.featured_image || meta.featuredImage,
+    }));
+    toast.success("HTML importado! Campos preenchidos automaticamente.");
+  };
+
   const resetForm = () => {
     setFormData({
       title: "",
@@ -430,14 +472,84 @@ const AdminBlog = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="content">Conteúdo *</Label>
-                    <RichTextEditor
-                      content={formData.content}
-                      onChange={(content) => setFormData({ ...formData, content })}
-                      placeholder="Escreva o conteúdo do post aqui... Use a barra de ferramentas para formatar o texto."
-                    />
-                  </div>
+                   <div className="space-y-2">
+                     <div className="flex items-center justify-between">
+                       <Label htmlFor="content">Conteúdo HTML *</Label>
+                       <div className="flex gap-2">
+                         <Button
+                           type="button"
+                           size="sm"
+                           variant="outline"
+                           onClick={() => {
+                             const input = document.createElement('input');
+                             input.type = 'file';
+                             input.accept = '.html,.htm';
+                             input.onchange = (e) => {
+                               const file = (e.target as HTMLInputElement).files?.[0];
+                               if (file) {
+                                 const reader = new FileReader();
+                                 reader.onload = (ev) => {
+                                   const html = ev.target?.result as string;
+                                   handleHtmlImport(html);
+                                 };
+                                 reader.readAsText(file);
+                               }
+                             };
+                             input.click();
+                           }}
+                         >
+                           <Upload className="h-3.5 w-3.5 mr-1.5" />
+                           Importar HTML
+                         </Button>
+                         <Button
+                           type="button"
+                           size="sm"
+                           variant="outline"
+                           onClick={() => {
+                             navigator.clipboard.readText().then((text) => {
+                               if (text.includes('<')) {
+                                 handleHtmlImport(text);
+                               } else {
+                                 toast.error("O conteúdo copiado não parece ser HTML");
+                               }
+                             }).catch(() => toast.error("Não foi possível acessar a área de transferência"));
+                           }}
+                         >
+                           <FileText className="h-3.5 w-3.5 mr-1.5" />
+                           Colar HTML
+                         </Button>
+                       </div>
+                     </div>
+
+                     <Tabs defaultValue="code" className="w-full">
+                       <TabsList className="w-auto">
+                         <TabsTrigger value="code" className="gap-1.5">
+                           <Code className="h-3.5 w-3.5" />
+                           Código
+                         </TabsTrigger>
+                         <TabsTrigger value="preview" className="gap-1.5">
+                           <Eye className="h-3.5 w-3.5" />
+                           Preview
+                         </TabsTrigger>
+                       </TabsList>
+                       <TabsContent value="code" className="mt-2">
+                         <Textarea
+                           id="content"
+                           value={formData.content}
+                           onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                           placeholder="Cole o HTML do artigo aqui..."
+                           className="font-mono text-sm min-h-[400px] resize-y"
+                           required
+                         />
+                       </TabsContent>
+                       <TabsContent value="preview" className="mt-2">
+                         <div 
+                           className="border border-border rounded-md p-6 min-h-[400px] max-h-[600px] overflow-y-auto prose prose-sm max-w-none bg-white text-foreground"
+                           dangerouslySetInnerHTML={{ __html: formData.content || '<p class="text-muted-foreground">Nenhum conteúdo para visualizar</p>' }}
+                         />
+                       </TabsContent>
+                     </Tabs>
+                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="featured_image">URL da Imagem Destaque</Label>
