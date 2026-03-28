@@ -21,6 +21,7 @@ import PreviewResult from "./pages/PreviewResult";
 import CheckoutNew from "./pages/CheckoutNew";
 import PaidReport from "./pages/PaidReport";
 import About from "./pages/About";
+import ComoFunciona from "./pages/ComoFunciona";
 
 const queryClient = new QueryClient();
 
