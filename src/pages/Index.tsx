@@ -131,7 +131,7 @@ const Index = () => {
             <nav aria-label="Links institucionais">
               <h4 className="font-semibold mb-4">Institucional</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-smooth">Sobre nós</a></li>
+                <li><a href="/sobre" className="hover:text-primary transition-smooth">Sobre nós</a></li>
                 <li><a href="#" className="hover:text-primary transition-smooth">Como funciona</a></li>
                 <li><a href="#faq" className="hover:text-primary transition-smooth">Dúvidas frequentes</a></li>
                 <li><a href="/blog" className="hover:text-primary transition-smooth">Blog</a></li>
