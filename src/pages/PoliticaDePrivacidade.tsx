@@ -1,6 +1,7 @@
 import { SEO } from "@/components/SEO";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
+import Footer from "@/components/Footer";
 import { Lock, Database, Eye, Share2, Cookie, UserCheck, ShieldCheck, Mail } from "lucide-react";
 
 const PoliticaDePrivacidade = () => {
@@ -122,11 +123,7 @@ const PoliticaDePrivacidade = () => {
         </div>
       </main>
 
-      <footer className="border-t border-border py-8 bg-background mt-12">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Checkplaca. Todos os direitos reservados.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
